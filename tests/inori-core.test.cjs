@@ -1,0 +1,18 @@
+const test=require('node:test');const assert=require('node:assert/strict');
+const {aggregate,bounded,chooseEdge,dockBounds,normalizeQuota,quotaFailure,idleAnimation}=require('../src/inori/core.cjs');
+test('another chat working prevents global celebration',()=>assert.equal(aggregate([{state:'completed',updatedAt:20},{state:'working',updatedAt:10}]).state,'working'));
+test('input request takes precedence over working',()=>assert.equal(aggregate([{state:'waiting'},{state:'working'}]).state,'waiting'));
+test('unreadable source never becomes idle or completed',()=>assert.equal(aggregate([],false).state,'unknown'));
+test('unknown records block global sleep',()=>assert.equal(aggregate([{state:'unknown'},{state:'idle'}]).state,'unknown'));
+test('missing usage is unknown, not 100%',()=>assert.deepEqual(normalizeQuota({rateLimits:{primary:{windowDurationMins:300}}}).windows,[]));
+test('failed refresh cannot expose an unverified account as stale verified data',()=>assert.equal(quotaFailure({health:'unverified',fingerprint:'new',windows:[{remaining:60}]},null).health,'unverified'));
+test('verified cached quota is explicitly stale on failure',()=>assert.equal(quotaFailure({health:'ok',fingerprint:'known',windows:[{remaining:60}]},'known').health,'stale'));
+test('mismatched account never recovers on a failed refresh',()=>{const q=quotaFailure({health:'account-mismatch',fingerprint:'new',windows:[]},'old');assert.equal(q.health,'account-mismatch');assert.deepEqual(q.windows,[]);});
+test('usage is subtracted, labels come from actual window',()=>{const q=normalizeQuota({rateLimitsByLimitId:{codex:{primary:{usedPercent:37,windowDurationMins:300,resetsAt:100},secondary:{usedPercent:14,windowDurationMins:10080}}}},50);assert.equal(q.windows[0].remaining,63);assert.equal(q.windows[1].label,'每周');assert.equal(q.updatedAt,50);});
+test('no synthetic refill at reset timestamp',()=>assert.equal(normalizeQuota({rateLimits:{primary:{usedPercent:80,windowDurationMins:60,resetsAt:1}}},90000).windows[0].remaining,20));
+test('waiting, errors and unknown never sleep',()=>{for(const s of ['waiting','error','unknown','working'])assert.equal(idleAnimation(s,999999),s);});
+test('idle timer has distinct stretch doze sleep',()=>{assert.equal(idleAnimation('idle',61000),'stretch');assert.equal(idleAnimation('idle',125000),'doze');assert.equal(idleAnimation('idle',300001),'sleep');});
+const a={x:-1600,y:-200,width:1600,height:1000},r={x:-1300,y:0,width:300,height:400};
+for(const side of ['left','right','top','bottom'])test('dock bounds stays within negative-coordinate monitor: '+side,()=>{const b=dockBounds(r,a,side);assert.ok(b.x>=a.x&&b.y>=a.y&&b.x+b.width<=a.x+a.width&&b.y+b.height<=a.y+a.height);assert.equal(chooseEdge(b,a),side);});
+test('center does not dock',()=>assert.equal(chooseEdge(r,a),null));
+test('removed monitor position is clamped',()=>{const b=bounded({x:9999,y:9999,width:300,height:400},{x:0,y:0,width:1024,height:728});assert.equal(b.x,724);assert.equal(b.y,328);});

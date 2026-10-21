@@ -1,0 +1,20 @@
+{
+  "name": "inori-pet-local",
+  "interface": {
+    "displayName": "楪祈桌宠本地插件"
+  },
+  "plugins": [
+    {
+      "name": "codex-pet",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-pet"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

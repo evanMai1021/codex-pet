@@ -1,0 +1,17 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {projectRuntimeStatus:p,projectSnapshot:s}=require('../src/inori/desktop-status/projection.cjs');
+test('active becomes working',()=>assert.equal(p({type:'active',activeFlags:[]}).state,'working'));
+test('explicit approval flag becomes waiting',()=>assert.deepEqual(p({type:'active',activeFlags:['waitingOnApproval']}),{state:'waiting',approvalPending:true,source:'desktop-ipc-experimental'}));
+test('input waiting is distinct from approval',()=>{const r=p({type:'active',activeFlags:['waitingOnUserInput']});assert.equal(r.state,'waiting');assert.equal(r.approvalPending,false)});
+test('approval removal restores work',()=>{assert.equal(p({type:'active',activeFlags:['waitingOnApproval']}).approvalPending,true);assert.equal(p({type:'active',activeFlags:[]}).state,'working')});
+test('idle is explicit',()=>assert.equal(p({type:'idle'}).state,'idle'));
+test('notLoaded is unknown',()=>assert.equal(p({type:'notLoaded'}).state,'unknown'));
+test('system error stays error',()=>assert.equal(p({type:'systemError'}).state,'error'));
+test('connection loss does not reuse old approval',()=>assert.deepEqual(p({type:'active',activeFlags:['waitingOnApproval']},{healthy:false}),{state:'unknown',approvalPending:null,source:'desktop-ipc-experimental'}));
+test('missing flags cannot prove working',()=>assert.equal(p({type:'active'}).state,'unknown'));
+test('unknown future flags fail closed',()=>assert.equal(p({type:'active',activeFlags:['futureFlag']}).state,'unknown'));
+test('unknown snapshot version is unsupported',()=>assert.equal(s({type:'snapshot',conversationState:{threadRuntimeStatus:{type:'active',activeFlags:[]}}},12).state,'unknown'));
+test('patches require a reducer and never guess',()=>assert.equal(s({type:'patches'},11).state,'unknown'));
+test('snapshot reads only runtime metadata',()=>{const r=s({type:'snapshot',conversationState:{threadRuntimeStatus:{type:'active',activeFlags:[]},requests:[{params:{secret:'fixture-not-real'}}],title:'fixture-not-real'}},11);assert.equal(r.state,'working');assert.ok(!JSON.stringify(r).includes('fixture-not-real'))});
+test('absent runtime remains unknown',()=>assert.equal(s({type:'snapshot',conversationState:{}},11).state,'unknown'));

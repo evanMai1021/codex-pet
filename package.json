@@ -1,0 +1,17 @@
+{
+  "name": "inori-codex-pet",
+  "version": "0.1.10",
+  "private": true,
+  "description": "Windows desktop companion with local Codex status integration",
+  "main": "src/inori/main.cjs",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "settings": "electron . --settings",
+    "test": "node --test tests/*.test.cjs",
+    "check-assets": "python scripts/validate_assets.py src/inori/assets/redwhite"
+  },
+  "devDependencies": {
+    "electron": "41.0.3"
+  }
+}

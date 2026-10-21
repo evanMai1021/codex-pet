@@ -1,0 +1,16 @@
+node_modules/
+run-data/
+runtime/
+dist/
+artifacts/
+*.zip
+*.log
+*.sqlite*
+*.db
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.vscode/
+.idea/

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src data:; script-src 'self'; style-src 'self'; connect-src 'none'"><link rel="stylesheet" href="settings.css"><title>楪祈桌宠 · 设置</title></head>
+<body><main>
+<div class="breadcrumb">桌面伙伴 <span>／</span> 插件设置</div>
+<header><div class="plugin-icon" aria-hidden="true">◈</div><div class="heading"><h1>楪祈 Codex Pet <span class="version">0.1.10</span></h1><p>陪你工作的桌面公仔，用按钮和滑块管理。</p></div><span class="badge" id="status">正在连接</span></header>
+<section class="settings-card" aria-labelledby="settings-title"><div class="section-heading"><h2 id="settings-title">桌面伙伴设置</h2><p>更改后立即生效，并自动保存在本机。</p></div>
+<div class="row"><div class="label"><label for="visible">显示桌面公仔</label><p>隐藏公仔后，仍可在这个窗口重新显示。</p></div><input type="checkbox" id="visible" aria-label="显示桌面公仔"></div>
+<div class="row"><div class="label"><label for="skin">当前公仔</label><p>使用原来的楪祈素材与动画，不替换桌宠程序。</p></div><div class="controls"><select id="skin" aria-label="选择公仔"></select><button id="import" hidden>导入角色包</button></div></div>
+<div class="row"><div class="label"><label for="size">角色大小</label><p id="sizeValue">100%</p></div><input id="size" type="range" min="80" max="120" step="20" aria-label="大小"></div>
+<div class="row"><div class="label"><label for="reduced">减少动态效果</label><p>保留状态提示，使用每个状态的第一帧。</p></div><input id="reduced" type="checkbox" aria-label="减少动态效果"></div>
+<div class="row"><div class="label"><label for="dockEnabled">允许趴边</label><p>关闭后解除当前趴边，拖到边缘也不会自动趴边。</p></div><input id="dockEnabled" type="checkbox" aria-label="允许趴边"></div>
+<div class="row"><div class="label"><label for="dock">贴边位置</label><p>保留原楪祈的四边姿势，也可以拖动公仔调整位置。</p></div><select id="dock" aria-label="贴边位置"><option value="">自由放置</option><option value="left">屏幕左边</option><option value="right">屏幕右边</option><option value="top">屏幕上边</option><option value="bottom">屏幕下边</option></select></div>
+<div class="license-row"><span id="license">角色许可</span><span>导入素材仅保存在本机</span></div>
+<p id="message" role="status" aria-live="polite"></p></section>
+<section class="component"><h2>桌面组件</h2><div class="component-row"><div class="mini-icon" aria-hidden="true">◈</div><div><strong>桌面公仔</strong><p>独立悬浮窗口 · 点击公仔齿轮打开设置</p></div><span id="component-state" class="component-state">—</span></div></section>
+<section class="guides"><h2>使用与角色教程</h2><details><summary>如何打开、隐藏和退出桌宠</summary><p>在设置里开启或关闭“显示桌面公仔”。隐藏不等于退出；退出请使用原楪祈桌宠的右键菜单。在已启用插件的本地聊天中，也可以请求打开此设置窗口。</p></details><details><summary>当前角色与素材</summary><p>当前接入的是原楪祈桌宠，继续使用原素材、动画、四边姿势和额度显示。通用换角色仍需后续适配；此入口不会启动额外的示例公仔。</p></details><details><summary>插件入口与当前功能范围</summary><p>Codex 负责插件的安装、启用与停用；本窗口负责公仔设置。目前是独立设置窗口，没有给 Codex 新增原生左侧导航按钮。停用插件不会自动退出已经运行的桌宠。</p><p>提示音、活跃程度、自定义气泡和页面内桌宠尚未实现。审批等待仍未完成真实验收；“状态未知”不代表任务已结束。</p></details></section>
+<footer><span>本地运行 · 设置自动保存</span><span>开发预览 · 代码与角色素材分别授权</span></footer>
+</main><script src="settings.js"></script></body></html>
