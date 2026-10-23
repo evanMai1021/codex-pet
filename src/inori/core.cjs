@@ -33,13 +33,15 @@ function chooseEdge(rect,area,threshold=24) {
   edges.sort((a,b)=>a[1]-b[1]);return edges[0][1]<=threshold?edges[0][0]:null;
 }
 // A normal grab can push part of the character beyond the work-area edge.
-function chooseDropEdge(rect,area,cursor,threshold=24){
+function chooseDropEdge(rect,area,cursor,threshold=24,preferredEdge=null){
  const candidates=[['left',rect.x-area.x,Math.abs(cursor.x-area.x)],['right',area.x+area.width-rect.x-rect.width,Math.abs(area.x+area.width-cursor.x)],['top',rect.y-area.y,Math.abs(cursor.y-area.y)],['bottom',area.y+area.height-rect.y-rect.height,Math.abs(area.y+area.height-cursor.y)]];
  const eligible=candidates.filter(([edge,d])=>d<=threshold&&(['left','right'].includes(edge)?rect.y+rect.height>area.y&&rect.y<area.y+area.height:rect.x+rect.width>area.x&&rect.x<area.x+area.width));
+ if(eligible.some(([edge])=>edge===preferredEdge))return preferredEdge;
  eligible.sort((a,b)=>a[2]-b[2]);return eligible[0]?.[0]??null;
 }
-function dockBounds(rect,area,edge) {
-  let r=bounded(rect,area);
+function dockBounds(rect,area,edge,regions=[],scale=1) {
+  // Keep the chosen edge anchor; clamp visible content along the edge.
+  let r=regions.length?visibleBounds(rect,area,regions,scale):bounded(rect,area);
   if(edge==='left')r.x=area.x;
   if(edge==='right')r.x=area.x+area.width-r.width;
   if(edge==='top')r.y=area.y;

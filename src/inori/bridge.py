@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from desktop_lifecycle import desktop_running
 import queue
 import sqlite3
 import subprocess
@@ -200,7 +201,14 @@ def main():
                     quota.close();quota.proc=None
                     events.put({'kind':'quota','healthy':False,'reason':'官方额度查询不可用','updatedAt':int(time.time()*1000)})
         quota.close()
+    def desktop_loop():
+        while not closing.is_set():
+            try:running=desktop_running()
+            except (OSError,ValueError):running=None
+            events.put({'kind':'desktopLifecycle','running':running})
+            closing.wait(2)
     threading.Thread(target=input_loop,daemon=True).start();threading.Thread(target=quota_loop,daemon=True).start()
+    threading.Thread(target=desktop_loop,daemon=True).start()
     next_quota=time.monotonic()+120;next_status=0
     try:
         while not closing.wait(.1):

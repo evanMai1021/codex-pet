@@ -2,7 +2,7 @@
 
 ## 使用便携包
 
-1. 在本项目 GitHub 仓库右侧点击 Releases，选择 v0.1.10 下的 Windows 便携 ZIP。仓库尚未发布时，此入口没有下载文件。
+1. 在本项目 GitHub 仓库右侧点击 Releases，选择最新正式版本下的 Windows 便携 ZIP。仓库尚未发布时，此入口没有下载文件。
 2. 解压到有写入权限的目录；不要直接在 ZIP 内运行程序。双击 `楪祈桌宠.exe`，应看到默认楪祈。
 3. 右击公仔选择“打开楪祈设置”。没有看见公仔时先检查系统托盘菜单。
 
@@ -32,7 +32,7 @@ python scripts/configure_plugin.py '你的完整路径\楪祈桌宠.exe'
 codex plugin marketplace add .
 ```
 
-配置脚本只修改当前 Windows 用户的 CodexPet/runtime.json；已存在时先保留备份。之后重启 Codex，在插件目录选择“楪祈桌宠本地插件”来源，安装 Codex Pet，再在新本地聊天中请求“打开 Codex Pet 设置”。这会打开独立设置窗口。
+配置脚本只修改当前用户的 CodexPet/runtime.json，并保留原配置备份。安装 Codex Pet 后，从插件详情或“楪祈桌宠设置”面板直接使用控件，所有设置在 Codex 内完成；“打开宠物”只显示公仔。不再用按钮跳转独立设置窗口。若仍显示旧内容，重新加载插件或新开聊天，使宿主加载更新后的工具。
 
 命令或插件目录入口会随宿主版本变化；若不支持本地插件，仍可直接使用桌宠右键设置，不必修改 Codex 安装目录。来源：[OpenAI 官方插件打包文档](https://developers.openai.com/plugins/build/plugins)，核对日期 2026-10-21。
 

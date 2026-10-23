@@ -9,7 +9,7 @@ function mergeDesktopStatus(local,desktop){
   if(!ACTIVE.has(row.state))return row;
   const value=live.get(row.threadId);
   const valid=desktop.connected&&desktop.protocolSupported&&value?.turnId===row.turnId&&value.synced;
-  if(valid&&value.state==='waiting')return {...row,state:'waiting',label:value.approvalPending?'等待批准':'等待你回答',phase:null,statusSource:'desktop-ipc-experimental'};
+  if(valid&&value.state==='waiting')return {...row,state:'waiting',approvalPending:value.approvalPending===true,label:value.approvalPending?'等待批准':'等待你回答',phase:null,statusSource:'desktop-ipc-experimental'};
   if(row.state==='waiting')return row;
   if(valid&&value.state==='working')return {...row,state:'working',label:'工作中',statusSource:'desktop-ipc-experimental'};
   if(valid&&value.state==='error')return {...row,state:'error',label:'桌面状态异常',phase:null,statusSource:'desktop-ipc-experimental'};

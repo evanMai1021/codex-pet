@@ -1,14 +1,14 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "codex-pet",
-  "version": "0.1.10",
-  "description": "原楪祈桌宠的图形设置入口",
+  "version": "0.1.12",
+  "description": "楪祈桌宠的图形控制与任务气泡设置入口",
   "extensions": {
     "com.openai": {
       "requires_local_executor": true,
       "interface": {
         "displayName": "Codex Pet",
-        "shortDescription": "控制原楪祈桌宠，不创建额外角色",
+        "shortDescription": "双服装连续动作、任务气泡与图形设置",
         "category": "Productivity",
         "defaultPrompt": [
           "打开 Codex Pet 设置面板"

@@ -7,7 +7,7 @@ r=Path(__file__).resolve().parents[1];version=json.loads((r/'package.json').read
 for f in [electron/'electron.exe',runtime/'python.exe',runtime/'LICENSE.txt']:
     if not f.is_file():p.error('Missing runtime file: '+str(f))
 if (runtime/'Lib/site-packages').exists() and any((runtime/'Lib/site-packages').iterdir()):p.error('Use a standalone Python runtime without site-packages')
-check(r/'src/inori/assets/redwhite')
+for skin in ['redwhite','battle']:check(r/'src/inori/assets'/skin)
 out=(a.out_dir or r/'dist')/('inori-codex-pet-v'+version);archive=out.parent/(out.name+'.zip')
 if out.exists() or archive.exists():p.error('Output already exists; preserve it or choose a new version')
 out.mkdir(parents=True)

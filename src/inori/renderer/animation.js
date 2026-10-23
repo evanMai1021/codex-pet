@@ -18,12 +18,30 @@ function sample(state,elapsed,idleMs=0,reduced=false){
 }
 function duration(action){return action==='peace'?1485:1200;}
 function interaction(action,elapsed,reduced=false){if(elapsed>=duration(action))return null;if(reduced)return{clip:action,frame:0};if(action==='peace'){let t=elapsed;for(let i=0;i<16;i++){const ms=i===7?360:75;if(t<ms)return{clip:'peace',frame:i};t-=ms;}}return{clip:'wave',frame:Math.min(15,Math.floor(elapsed/75))};}
-function dockLayout(dock,edge){
- const key=edge==='top'&&dock.topDerivedFromBottom?'bottom':edge,p=dock.poses[key],scale=p.scale??dock.targetFaceWidth/(p.face[2]-p.face[0]),[bx,by,br,bb]=p.box;
+function dockLayout(dock,edge,elapsed=0,reduced=false){
+ const key=edge==='top'&&dock.topDerivedFromBottom?'bottom':edge,sequence=dock.animations?.[key];
+ const index=sequence?.frames?.length&&!reduced?Math.floor(Math.max(0,elapsed)/sequence.frameMs)%sequence.frames.length:0;
+ const p=sequence?.frames?.[index]||dock.poses[key],scale=p.scale??dock.targetFaceWidth/(p.face[2]-p.face[0]),[bx,by,br,bb]=p.box;
  const x=edge==='left'?-bx*scale:edge==='right'?192-br*scale:96-(bx+br)/2*scale,y=(edge==='left'||edge==='right'?194:208)-bb*scale,rotate=edge==='top'&&!!dock.topDerivedFromBottom;
  const faceRect={x:x+p.face[0]*scale,y:y+p.face[1]*scale,width:(p.face[2]-p.face[0])*scale,height:(p.face[3]-p.face[1])*scale};
  if(rotate){faceRect.x=192-faceRect.x-faceRect.width;faceRect.y=208-faceRect.y-faceRect.height;}
  return{scale,x,y,source:p.source,box:p.box,face:p.face,imageKey:p.imageKey||'dock',rotate,faceRect,faceWidthTarget:p.faceWidthTarget??dock.targetFaceWidth};
 }
-root.InoriAnimation={sample,interaction,duration,dockLayout,COMPLETION_RATE};
+function timedClip(manifest,clip,elapsed,reduced=false){
+ const value=manifest.clips?.[clip];if(!value||!Number.isFinite(value.frameMs)||value.frameMs<=0||!value.frames?.length)return null;
+ const count=value.frames.length,n=Math.floor(Math.max(0,elapsed)/value.frameMs);
+ return {clip,frame:reduced?(value.reducedFrame??0):value.loop?n%count:Math.min(count-1,n)};
+}
+function sampleAsset(manifest,state,elapsed,idleMs=0,reduced=false){
+ const original=sample(state,elapsed,idleMs,reduced);
+ if(state==='idle'&&original.phase!=='awake'){
+  const phase=original.phase,phases=manifest.idlePhases||{};
+  let clip=phases[phase],time=phase==='stretch'?idleMs-60000:phase==='doze'?idleMs-120000:idleMs-300000;
+  if(phase==='sleep'&&phases.sleepEnter){const entry=manifest.clips[phases.sleepEnter],duration=entry.frames.length*entry.frameMs;if(!reduced&&time<duration)clip=phases.sleepEnter;else time=Math.max(0,time-duration);}
+  const timed=clip&&timedClip(manifest,clip,time,reduced);return timed?{...timed,phase}:original;
+ }
+ const clip=manifest.stateMap?.[state],timed=clip&&timedClip(manifest,clip,elapsed,reduced);
+ return timed?{...timed,...(state==='unknown'?{question:true}:{})}:original;
+}
+root.InoriAnimation={sample,interaction,duration,dockLayout,COMPLETION_RATE,timedClip,sampleAsset};
 })(globalThis);

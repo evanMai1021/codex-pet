@@ -33,14 +33,30 @@ def check(folder):
             fx,fy,fr,fb=numbers(f['face'],4);assert fx<fr and fy<fb, 'Invalid face rectangle'
             scale=f.get('scale',dock.get('targetFaceWidth',0)/(fr-fx));assert isinstance(scale,(float,int)) and math.isfinite(scale) and scale>0, 'Invalid dock scale'
     for name,count in REQUIRED.items():
-        clip=clips[name];assert len(clip['frames'])>=count, name+' needs at least '+str(count)+' frame slots'
+        assert name in clips and len(clips[name]['frames'])>=count, name+' needs at least '+str(count)+' frame slots'
+    for name,clip in clips.items():
+        assert clip['frames'], name+' has no frames'
+        if 'frameMs' in clip:
+            ms=clip['frameMs'];assert isinstance(ms,(int,float)) and not isinstance(ms,bool) and math.isfinite(ms) and ms>0, 'Invalid frame duration'
+            assert isinstance(clip.get('loop'),bool), 'Timed clip requires boolean loop'
+        if 'reducedFrame' in clip:assert isinstance(clip['reducedFrame'],int) and 0<=clip['reducedFrame']<len(clip['frames']), 'Reduced frame outside clip'
         if 'size' in clip:assert tuple(clip['size'])==sizes[clip['image']], 'Declared image size differs for '+name
         for f in clip['frames']:
             key=f.get('image',name);assert key in images, 'Unknown frame image key: '+key
             frame(f,images[key])
+    for state,clip in m.get('stateMap',{}).items():
+        assert isinstance(state,str) and clip in clips, 'State map references missing clip'
+    for phase,clip in m.get('idlePhases',{}).items():
+        assert phase in ['stretch','doze','sleep','sleepEnter'] and clip in clips, 'Idle phase references missing clip'
     for edge in ['left','right','bottom']+([] if dock.get('topDerivedFromBottom') else ['top']):
         f=dock['poses'][edge];key=f.get('imageKey','dock');assert key in dock_images, 'Unknown dock image key'
         frame(f,dock_images[key],False)
+    for edge,sequence in dock.get('animations',{}).items():
+        assert edge in ['left','right','top','bottom'] and sequence['frames'], 'Invalid dock animation'
+        assert isinstance(sequence['frameMs'],(float,int)) and math.isfinite(sequence['frameMs']) and sequence['frameMs']>0, 'Invalid dock frame duration'
+        for f in sequence['frames']:
+            key=f.get('imageKey','dock');assert key in dock_images, 'Unknown dock animation image'
+            frame(f,dock_images[key],False)
     return m,sorted(sizes)
 def main():
     a=argparse.ArgumentParser(description=__doc__);a.add_argument('folder',type=Path);a.add_argument('--export',type=Path);args=a.parse_args()

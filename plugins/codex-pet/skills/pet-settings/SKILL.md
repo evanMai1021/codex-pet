@@ -1,10 +1,14 @@
 ---
 name: pet-settings
-description: 打开本项目 Windows 桌宠的图形设置窗口，管理显示、大小、允许趴边和减少动态。
+description: 在 Codex 内调整楪祈桌宠的服装、显示、大小、趴边、减少动态、随启动及任务气泡设置。
 ---
 
-调用本插件 pet_open_settings 工具，打开本机已经配置的桌宠设置；由用户使用控件管理。此工具只接受空参数，不创建角色或执行聊天任务。
+调用本插件 pet_control_panel，在 Codex 内显示完整设置面板。直接使用面板控件，不打开独立设置窗口。需要显示公仔时用 pet_open。pet_open_settings 保留为内嵌面板的兼容入口。
 
-若提示启动位置缺失，先阅读仓库 docs/INSTALL.md，让用户选择已安装桌宠 exe，再用 scripts/configure_plugin.py 配置。不查找或读取账号凭据。
+用户明确要求修改某项时，可调用 pet_settings_update，传入 set 对象；仅设置用户要求的字段，其他值不变。读取用 pet_settings_read。气泡语句预览来自运行时，不编造审批状态或内部思考内容。
 
-设置为独立窗口，不会给 Codex 新增原生侧栏按钮。制作新角色时转到本插件 create-codex-pet Skill，不把固定角色下拉框说成可用的导入器。
+桌宠未启动时，设置接口连接后台实例，不主动显示公仔；显示需要“打开宠物”或 visible 开关。插件面板所有修改立即应用并自动保存。随 Codex 启动不添加开机启动项。
+
+如提示未配置位置，参考 docs/INSTALL.md，由用户选择已安装的本地 exe 并使用 scripts/configure_plugin.py 配置；不读取凭据或安装目录。
+
+制作新角色使用 create-codex-pet Skill；内置服装选择不表示支持运行时导入任意角色包。
