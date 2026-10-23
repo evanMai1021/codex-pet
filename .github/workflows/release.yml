@@ -1,5 +1,6 @@
 name: Publish Windows release
 on:
+  workflow_dispatch:
   push:
     tags: ['v*']
 permissions:
@@ -25,7 +26,13 @@ jobs:
       - name: Validate tag and install locked build dependencies
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag and package version differ' }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag and package version differ' }
+          if ($env:GITHUB_REF_TYPE -ne 'tag') {
+            git fetch origin "refs/tags/v${version}:refs/tags/v${version}"
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            git checkout --detach "v$version"
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
           npm ci --no-audit --no-fund
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Check logic and both outfit manifests
