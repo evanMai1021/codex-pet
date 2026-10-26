@@ -1,0 +1,36 @@
+name: Remove verified obsolete release draft
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/remove-obsolete-release-draft.yml']
+permissions:
+  contents: write
+jobs:
+  remove-draft:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Validate consolidated release and remove only the original orphan draft
+        shell: pwsh
+        run: |
+          $current = gh api "repos/$env:GH_REPO/releases/tags/v0.1.14" | ConvertFrom-Json
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($current.draft -or $current.tag_name -ne 'v0.1.14' -or $current.assets.Count -ne 4) { throw 'Consolidated release is not ready' }
+          $id = 424642791
+          $raw = gh api "repos/$env:GH_REPO/releases/$id" 2>&1
+          if ($LASTEXITCODE) {
+            if (($raw | Out-String) -match '404') { Write-Output 'Original draft is already absent'; exit 0 }
+            throw 'Could not inspect original draft'
+          }
+          $draft = $raw | ConvertFrom-Json
+          if ($draft.id -ne $id -or !$draft.draft -or $draft.tag_name -ne 'v0.1.17' -or $draft.name -ne 'Codex Pet 0.1.17 · 楪祈') { throw 'Original draft identity changed; preserving it' }
+          if ($draft.assets.Count -ne 4 -or @($draft.assets | Where-Object { $_.name -notmatch '0\.1\.17' }).Count) { throw 'Unexpected original draft assets' }
+          gh api --method DELETE "repos/$env:GH_REPO/releases/$id"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $after = gh api "repos/$env:GH_REPO/releases/$id" 2>&1
+          if ($LASTEXITCODE -eq 0 -or ($after | Out-String) -notmatch '404') { throw 'Draft absence was not confirmed' }
+          Write-Output 'Deleted obsolete draft release ID 424642791 and its four assets; consolidated 0.1.14 preserved'
