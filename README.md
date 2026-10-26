@@ -2,7 +2,7 @@
 
 Windows 桌面悬浮公仔。默认红白服楪祈，可选红黑战斗服。安装本地插件后，可在 Codex 内调整全部设置，修改立即生效；也保留独立使用时的右键设置。
 
-![默认楪祈桌宠](docs/images/desktop.png)
+<img src="docs/images/desktop-compact-014.png" alt="默认楪祈桌宠" width="192" height="230">
 
 上图额度为隔离检查中的模拟数据。两套内置服装可在[设置窗口](docs/images/outfits.png)中选择，截图状态同为模拟数据。
 
