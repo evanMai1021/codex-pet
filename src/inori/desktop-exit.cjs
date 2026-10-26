@@ -12,6 +12,11 @@ function createDesktopPidWatch(isAlive=pid=>{
  try{process.kill(pid,0);return true;}catch(error){return error.code==='ESRCH'?false:null;}
 }){
  let pids=[];const gate=createDesktopExitGate();
+ const running=()=>{
+  if(!pids.length)return null;
+  const states=pids.map(isAlive);
+  return states.includes(true)?true:states.every(state=>state===false)?false:null;
+ };
  return {
   bind(value){
    if(pids.length||!Array.isArray(value)||!value.length||value.some(pid=>!Number.isInteger(pid)||pid<=0))return;
@@ -19,9 +24,9 @@ function createDesktopPidWatch(isAlive=pid=>{
   },
   shouldQuit(){
    if(!pids.length)return false;
-   const states=pids.map(isAlive);
-   return gate(states.includes(true)?true:states.every(state=>state===false)?false:null);
-  }
+   return gate(running());
+  },
+  running
  };
 }
 function createPluginLeaseWatch(enabled,quit){

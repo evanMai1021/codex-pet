@@ -251,7 +251,9 @@ else{
     });
     await win.loadFile(path.join(__dirname,'renderer/index.html'));relocate();
     const leaseWatch=require('./desktop-exit.cjs').createPluginLeaseWatch(()=>integration.readConfig().followCodex===true,()=>{
-      setTimeout(()=>{if(!quitting&&!leaseWatch.hasOwners()){quitReason='plugin-connections-closed';app.quit();}},50);
+      // Codex can replace MCP processes while starting or refreshing plugins.
+      // A closed plugin pipe alone is not evidence that the desktop host exited.
+      setTimeout(()=>{if(!quitting&&!leaseWatch.hasOwners()&&desktopPidWatch.running()===false){quitReason='plugin-connections-closed-and-host-exited';app.quit();}},50);
     });
     settingsControl=await require('./settings/control-server.cjs').startControlServer(settingsPanel,DATA,message=>{
       if(message?.action==='upgrade'){setImmediate(()=>{if(!quitting){quitReason='version-upgrade';app.quit();}});return {closing:true};}

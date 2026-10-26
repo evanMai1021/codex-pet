@@ -1,6 +1,6 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
-test('last plugin connection closes immediately without waiting for desktop main process to die',()=>{
+test('last plugin connection signals release; caller must independently verify host exit',()=>{
  const {createPluginLeaseWatch}=require('../src/inori/desktop-exit.cjs');
  let exits=0,enabled=true;const watch=createPluginLeaseWatch(()=>enabled,()=>exits++);
  watch({action:'attach',pid:100});watch({action:'attach',pid:200});

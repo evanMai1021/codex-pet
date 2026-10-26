@@ -1,6 +1,13 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const {createDesktopExitGate,createDesktopPidWatch}=require('../src/inori/desktop-exit.cjs');
 
+test('plugin disconnect must distinguish live, missing and unknown desktop host',()=>{
+ let state=true;const watch=createDesktopPidWatch(()=>state);
+ assert.equal(watch.running(),null);watch.bind([100]);assert.equal(watch.running(),true);
+ state=null;assert.equal(watch.running(),null);
+ state=false;assert.equal(watch.running(),false);
+});
+
 test('bound main PID exits even after bridge stops or renderer survives',()=>{
  let alive=true;const watch=createDesktopPidWatch(pid=>pid===100?alive:true);
  watch.bind([100]);assert.equal(watch.shouldQuit(),false);
