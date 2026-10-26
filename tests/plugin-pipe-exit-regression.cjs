@@ -8,7 +8,9 @@ fs.writeFileSync(path.join(process.env.CODEX_PET_HOME,'runtime.json'),JSON.strin
 process.argv.push('--no-bridge','--settings-self-test');const m=new Module(main,module);m.filename=main;m.paths=Module._nodeModulePaths(path.dirname(main));
 m._compile(fs.readFileSync(main,'utf8')+'\nmodule.exports={window:()=>win,panel:()=>settingsPanel};',main);
 let child,started=0,expected=false,visible=false;const wait=ms=>new Promise(r=>setTimeout(r,ms));
-app.on('before-quit',()=>{if(!expected)return;const latencyMs=performance.now()-started,hidden=BrowserWindow.getAllWindows().every(w=>!w.isVisible());fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:hidden&&visible&&latencyMs<500,latencyMs,hidden,visible,mode:'real MCP stdin closed while desktop host remains alive'}));});
+let exitEvidence;
+app.on('before-quit',()=>{if(!expected||exitEvidence)return;exitEvidence={latencyMs:performance.now()-started,hidden:BrowserWindow.getAllWindows().every(w=>!w.isVisible()),visible};});
+app.on('will-quit',()=>{if(!exitEvidence)return;const checks=[{name:'all-windows-hide-within-500ms',pass:exitEvidence.hidden&&exitEvidence.latencyMs<500},{name:'pet-was-visible',pass:visible},{name:'graceful-will-quit-reached',pass:true}];fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({...exitEvidence,passed:checks.every(c=>c.pass),checks,mode:'real MCP stdin closed; desktop remains alive; graceful will-quit reached'}));});
 app.whenReady().then(async()=>{
  for(let i=0;i<100&&!m.exports.panel();i++)await wait(50);m.exports.window().showInactive();visible=m.exports.window().isVisible();
  const server=process.env.INORI_TEST_PLUGIN_SERVER||path.resolve(__dirname,'../plugins/codex-pet/server/index.cjs');

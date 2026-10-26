@@ -67,6 +67,7 @@ async function worker(dir,deps={}){
   oldConfig=integration.readConfig();
   // Keep settings inside the same installation root; never touch account credentials.
   const previous=oldConfig.inoriExecutable,previousData=previous&&path.join(path.dirname(previous),'resources/run-data');
+  let previousPid;try{previousPid=JSON.parse(fs.readFileSync(path.join(previousData,'settings-control.json'),'utf8')).pid;}catch{}
   stage='switching';write({version:plan.version});
   if(previousData){try{await require('./control-client.cjs').lifecycle({action:'upgrade'});oldStopped=true;}catch{
    const endpoint=path.join(previousData,'settings-control.json');
@@ -76,7 +77,10 @@ async function worker(dir,deps={}){
     run(['-Mode','stop','-Executable',previous,'-PetPid',String(pid)]);oldStopped=true;
    }
   }}
-  if(previousData&&oldStopped){for(let i=0;i<50&&fs.existsSync(path.join(previousData,'settings-control.json'));i++)await new Promise(r=>setTimeout(r,100));}
+  if(previousData&&oldStopped&&Number.isInteger(previousPid)&&previousPid>0){
+   let alive=true;for(let i=0;i<50&&alive;i++){try{process.kill(previousPid,0);}catch(e){if(e.code==='ESRCH')alive=false;}if(alive)await new Promise(r=>setTimeout(r,100));}
+   if(alive)run(['-Mode','stop','-Executable',previous,'-PetPid',String(previousPid)]);
+  }
   const settings=previousData&&path.join(previousData,'settings.json');if(settings&&fs.existsSync(settings)){fs.mkdirSync(path.join(appFolder,'resources/run-data'),{recursive:true});fs.copyFileSync(settings,path.join(appFolder,'resources/run-data/settings.json'));}
   const config=integration.configFile();if(fs.existsSync(config))fs.copyFileSync(config,path.join(work,'runtime-before.json'));fs.mkdirSync(path.dirname(config),{recursive:true});
   fs.writeFileSync(config,JSON.stringify({...oldConfig,inoriExecutable:exe,installRoot:dir},null,2));switched=true;

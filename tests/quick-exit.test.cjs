@@ -7,7 +7,7 @@ test('actual quit handler hides windows immediately and exits when bridge finish
  let hidden=false,exited=false,writes=0;const bridge=new EventEmitter();
  bridge.stdin={write(){},end(){setTimeout(()=>bridge.emit('exit',0),20);}};
  const win={hide(){hidden=true;},isDestroyed:()=>false,getBounds:()=>({x:0,y:0})};
- app.exit=()=>{exited=true;};
+ app.quit=()=>{exited=true;};
  const timers=[];
  const context={require:id=>id==='electron'?{app,BrowserWindow:{getAllWindows:()=>[win]},ipcMain:{on(){}}}:id==='node:fs'?{...fs,mkdirSync(){},readFileSync(){throw Error('isolated');},writeFileSync(){writes++;}}:id==='./details-window.cjs'?{createDetailsWindow:()=>({update(){},close(){}})}:id==='./task-bubble.cjs'?{createTaskBubble:()=>({close(){}})}:native(id),
   process:{env:{INORI_DATA_DIR:path.dirname(file)},argv:[]},__dirname:path.dirname(file),console,Buffer,

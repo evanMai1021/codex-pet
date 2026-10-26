@@ -1,6 +1,6 @@
 {
   "name": "inori-codex-pet",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "private": true,
   "description": "Windows desktop companion with local Codex status integration",
   "main": "src/inori/main.cjs",
