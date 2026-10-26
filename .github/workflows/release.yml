@@ -102,3 +102,5 @@ jobs:
             gh api --method DELETE "repos/$env:GH_REPO/git/refs/tags/$($entry.tag)"
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
           }
+          # Already absent retired tags are a successful, idempotent cleanup.
+          exit 0
