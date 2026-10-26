@@ -101,7 +101,7 @@ function paint(){if(!skinReady)return;
  const videoEpoch=reacting?clickStartedAt:phase?idleSince:frameStart;
  const videoFrame=videoAnimation.frame(activeSkin,skin,videoKey,skinCatalog[activeSkin].base,!pose&&!data.reduced,videoEpoch);
  // Display the decoded video directly so high-DPI/large pets do not upscale a 192px bitmap.
- if(videoFrame&&videoFrame.video.parentElement!==avatar){videoFrame.video.className='continuous-video';avatar.insertBefore(videoFrame.video,$('state-dot'));}
+ if(videoFrame&&videoFrame.video.parentElement!==avatar){videoFrame.video.className='continuous-video';avatar.appendChild(videoFrame.video);}
  $('sprite').style.opacity=videoFrame?'0':'';
  const dockFrame=pose?anim.dockLayout(skin.dock,pose,elapsed,!!data.reduced):null;
  const key=videoFrame?videoFrame.key:JSON.stringify([activeSkin,pose,pose?dockFrame:[frame.source,frame.box,frame.draw,frame.image||sample.clip],sample.lift||0,sample.electric||0,!!sample.question]);
