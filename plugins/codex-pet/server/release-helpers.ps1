@@ -14,15 +14,19 @@ if($Mode -eq 'probe' -or $Mode -eq 'plugin'){
  $catalogText=& $command.Source plugin marketplace list --json
  if($LASTEXITCODE){exit $LASTEXITCODE}
  $registered=($catalogText | ConvertFrom-Json).marketplaces | Where-Object {$_.name -eq 'inori-pet-local'}
+ $wanted=Get-Content -LiteralPath (Join-Path $Source 'plugins/codex-pet/plugin.json') -Raw -Encoding UTF8 | ConvertFrom-Json
  $restoreFiles=@()
  if($registered){
+  $installedText=& $command.Source plugin list --marketplace inori-pet-local --json
+  if($LASTEXITCODE){exit $LASTEXITCODE}
+  $installed=($installedText | ConvertFrom-Json).installed | Where-Object {$_.pluginId -eq 'codex-pet@inori-pet-local'}
+  if($installed.version -eq $wanted.version){Write-Output 'Matching plugin version is already installed';exit 0}
   $existingRoot=[IO.Path]::GetFullPath($registered.root)
   $manifestPath=Join-Path $existingRoot '.agents/plugins/marketplace.json'
   $entry=((Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json).plugins | Where-Object {$_.name -eq 'codex-pet'})
   if(!$entry -or $entry.source.source -ne 'local'){throw 'Existing plugin source requires manual review'}
   $pluginPath=[IO.Path]::GetFullPath((Join-Path $existingRoot $entry.source.path))
   if(!$pluginPath.StartsWith($existingRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Existing plugin source escaped marketplace'}
-  $wanted=Get-Content -LiteralPath (Join-Path $Source 'plugins/codex-pet/plugin.json') -Raw -Encoding UTF8 | ConvertFrom-Json
   $managed=$existingRoot -match '\\.codex\\|\\.cache\\' -or (Test-Path -LiteralPath (Join-Path $existingRoot '.git'))
   if($managed){
    & $command.Source plugin marketplace upgrade inori-pet-local --json
