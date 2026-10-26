@@ -19,7 +19,7 @@ const desktopPidWatch=require('./desktop-exit.cjs').createDesktopPidWatch();
 const WIDTH=300,HEIGHT=560;
 const ROOT=path.resolve(__dirname,'../..');
 const DATA=process.env.INORI_DATA_DIR||(app.isPackaged?path.resolve(ROOT,'../run-data'):path.join(ROOT,'run-data'));
-fs.mkdirSync(DATA,{recursive:true});app.setPath('userData',DATA);app.setName('楪祈 Codex 桌宠 0.1.17');
+fs.mkdirSync(DATA,{recursive:true});app.setPath('userData',DATA);app.setName('楪祈 Codex 桌宠 0.1.14');
 const smoke=process.argv.includes('--smoke');
 const liveCheck=process.argv.includes('--live-check');
 let win,bridge,quitting=false,hovered=false,urgentTimer,saveTimer,drag=null,regions=[],settlePlacement=false;
@@ -164,7 +164,7 @@ function setSkin(id){settings.skin=normalizeSkin(id);snapshot.skin=settings.skin
 function setDockEnabled(value){settings.dockEnabled=value;setDock(value?settings.dock:null);}
 function setDock(edge){if(edge&&!settings.dockEnabled)return;settlePlacement=settings.dock!==edge;settings.dock=edge;snapshot.dock=edge;snapshot.peek=false;relocate();}
 function menu(){return Menu.buildFromTemplate([
-  {label:'楪祈桌宠 0.1.17',enabled:false},
+  {label:'楪祈桌宠 0.1.14',enabled:false},
   {label:'自动显示任务气泡',type:'checkbox',checked:settings.bubbleEnabled!==false,click:()=>setBubbleEnabled(settings.bubbleEnabled===false)},
   {label:'气泡大小',submenu:[.8,1,1.2,1.4].map((scale,i)=>({label:['小（80%）','标准（100%）','大（120%）','更大（140%）'][i],type:'radio',checked:settings.bubbleScale===scale,click:()=>settingsPanel.apply({bubbleScale:scale})}))},
   {label:'回到屏幕中间 / 解除停靠',click:()=>{settings.dock=null;snapshot.dock=null;const a=screen.getPrimaryDisplay().workArea;win.setPosition(Math.round(a.x+(a.width-WIDTH*settings.size)/2),Math.round(a.y+(a.height-HEIGHT*settings.size)/2));snapshot.lastInteraction=Date.now();save();send();}},

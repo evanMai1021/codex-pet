@@ -1,0 +1,8 @@
+{
+  "version": "0.1.14",
+  "retired": [
+    {"tag": "v0.1.15", "commit": "305621af142f53c3795b81cfedbdccfc4b1ff4f4"},
+    {"tag": "v0.1.16", "commit": "3972c17f9e74d5bd66bdf86173f69e968e9d81ad"},
+    {"tag": "v0.1.17", "commit": "c5eab74cd33df0d5d23c67fa444e1bc5f291a275"}
+  ]
+}

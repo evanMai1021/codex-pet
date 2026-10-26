@@ -1,4 +1,4 @@
-# Codex Pet · 楪祈 0.1.17
+# Codex Pet · 楪祈 0.1.14
 
 Windows 桌面悬浮公仔。默认红白服楪祈，可选红黑战斗服。安装本地插件后，可在 Codex 内调整全部设置，修改立即生效；也保留独立使用时的右键设置。
 
@@ -14,7 +14,7 @@ Windows 桌面悬浮公仔。默认红白服楪祈，可选红黑战斗服。安
 - 自制公仔：[制作教程](docs/CUSTOM-PET.md)，或把 [create-codex-pet Skill](plugins/codex-pet/skills/create-codex-pet/SKILL.md) 交给支持本地文件的 AI。
 - 维护者：[构建与发布](docs/RELEASING.md)。
 
-## 0.1.17 更新
+## 0.1.14 更新
 
 - 插件面板新增版本提示、更新说明、一键安装和更新进度，无需离开 Codex 查找下载包。
 - 程序和插件统一下载校验、迁移设置；保留已有插件来源，通过正式 CLI 更新插件。

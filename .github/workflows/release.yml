@@ -68,7 +68,37 @@ jobs:
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $files = @(Get-ChildItem dist -File | Where-Object { $_.Extension -in '.zip','.txt' } | ForEach-Object FullName)
-          gh release create "v$version" @files --draft --verify-tag --title "Codex Pet $version · 楪祈" --notes-file docs/RELEASE-NOTES.md
+          gh release view "v$version" --json id *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release edit "v$version" --draft=true --target "$env:GITHUB_SHA" --title "Codex Pet $version · 楪祈" --notes-file docs/RELEASE-NOTES.md
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            gh release upload "v$version" @files --clobber
+          } else {
+            gh release create "v$version" @files --draft --verify-tag --title "Codex Pet $version · 楪祈" --notes-file docs/RELEASE-NOTES.md
+          }
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           gh release edit "v$version" --draft=false --latest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Retire explicitly consolidated releases after successful publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $file = '.github/release-consolidation.json'
+          if (!(Test-Path $file)) { exit 0 }
+          $plan = Get-Content $file -Raw | ConvertFrom-Json
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($plan.version -ne $version) { exit 0 }
+          foreach ($entry in $plan.retired) {
+            if ($entry.tag -notin @('v0.1.15','v0.1.16','v0.1.17')) { throw 'Unexpected retirement target' }
+            $sha = gh api "repos/$env:GH_REPO/git/ref/tags/$($entry.tag)" --jq '.object.sha' 2>$null
+            if ($LASTEXITCODE) { continue }
+            if ($sha -ne $entry.commit) { Write-Warning "Preserving changed tag $($entry.tag)"; continue }
+            gh release view $entry.tag --json id *> $null
+            if ($LASTEXITCODE -eq 0) {
+              gh release delete $entry.tag --yes
+              if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            }
+            gh api --method DELETE "repos/$env:GH_REPO/git/refs/tags/$($entry.tag)"
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }

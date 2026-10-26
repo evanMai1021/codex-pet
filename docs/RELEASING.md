@@ -1,6 +1,6 @@
 # 构建和发布
 
-仓库代码、插件声明和设置页面统一为 0.1.13。GitHub Release 标签建议为 v0.1.13；发布说明注明当前兼容范围与审批等待尚未完整覆盖。源码和便携包是两个独立下载项。
+仓库代码、插件声明和设置页面统一为 0.1.14。GitHub Release 标签建议为 v0.1.14；发布说明注明当前兼容范围与审批等待尚未完整覆盖。源码和便携包是两个独立下载项。
 
 构建前在仓库运行 npm install。准备一个仅包含 Python 3.12 runtime 的独立目录，含 python.exe、Python DLL、Lib、DLLs、LICENSE.txt，不含虚拟环境、site-packages、用户配置或凭据。不要把自己的整个 Python 工作目录作为参数。
 
@@ -8,7 +8,7 @@
 python scripts/build_portable.py --python-runtime '你的独立Python运行库目录'
 ```
 
-脚本只创建新的 dist/inori-codex-pet-v0.1.13 和 ZIP，已存在时拒绝覆盖。它保留 Electron 和 Python 的许可证，不下载依赖、不连接账户。便携版配置在 resources/run-data。
+脚本只创建新的 dist/inori-codex-pet-v0.1.14 和 ZIP，已存在时拒绝覆盖。它保留 Electron 和 Python 的许可证，不下载依赖、不连接账户。便携版配置在 resources/run-data。
 
 检查：运行 npm test、python scripts/validate_assets.py src/inori/assets/redwhite，并实际启动构建后的程序检查默认角色和设置版本。窗口自动回归可用本机 Electron 执行 tests/paged-bubble-regression.cjs；设置 INORI_DATA_DIR 和 INORI_TEST_OUT 为单独的临时目录。模拟界面通过不代表真实审批通过。
 
@@ -22,4 +22,6 @@ README 中默认素材的用途与代码许可分别说明。GitHub 公开仓库
 
 工作流复用 v0.1.10 已公开发布包内的独立 Python 运行库，下载后校验固定 SHA256，只提取 runtime/python，不包含用户数据。需要升级该运行库时，应另行核对来源、校验值和兼容性。官方 Actions 固定到提交，发布使用 GitHub 的临时工作流令牌，不需要维护者填写个人令牌。
 
-0.1.13 的当前窗口验收脚本为 paged-bubble、video-batch、corner-badge、monitor-seam、bubble-scale 和 pet-size-drift regression。保留的旧独立详情页回归用于历史参考，不作为分页气泡的验收入口。检查素材时使用 `python scripts/validate_builtin_assets.py`，同时验证 JSON/JS 一致性和视频引用。
+0.1.14 的当前窗口验收脚本为 paged-bubble、video-batch、corner-badge、monitor-seam、bubble-scale 和 pet-size-drift regression。保留的旧独立详情页回归用于历史参考，不作为分页气泡的验收入口。检查素材时使用 `python scripts/validate_builtin_assets.py`，同时验证 JSON/JS 一致性和视频引用。
+
+本轮插件更新和退出修复统一为0.1.14，上一正式版为0.1.13。合并发布会重新生成对应附件和校验值；不改写 main 分支历史。整理清单只匹配指定旧标签的提交，避免影响将来使用相同版本号的新发布。
