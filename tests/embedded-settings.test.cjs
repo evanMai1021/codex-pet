@@ -2,12 +2,17 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {validatePatch,properties}=require('../src/inori/settings/schema.cjs');
 test('every native setting is supported with strict whole-patch validation',()=>{
- assert.equal(Object.keys(properties).length,10);
+ assert.equal(Object.keys(properties).length,11);
  for(const p of [null,[],{}, {size:.9},{dock:'unknown'},{skin:'cat'},{visible:1},{bubbleCustomLine:'x'.repeat(57)},{arbitrary:'x'},{followCodex:'true'}])assert.throws(()=>validatePatch(p));
  assert.throws(()=>validatePatch({dock:'left'},{dockEnabled:false}));
  assert.deepEqual(validatePatch({dockEnabled:true,dock:'top'},{dockEnabled:false}),{dockEnabled:true,dock:'top'});
  assert.deepEqual(validatePatch({bubbleTone:'affectionate',bubbleCustomLine:' hi '}),{bubbleTone:'cute',bubbleCustomLine:'hi'});
  assert.equal(fs.readFileSync(require.resolve('../src/inori/settings/schema.cjs'),'utf8'),fs.readFileSync(require.resolve('../plugins/codex-pet/server/schema.cjs'),'utf8'));
+});
+test('bubble scale is independent, bounded, and atomically validated',()=>{
+ for(const value of [.8,1,1.2,1.4])assert.deepEqual(validatePatch({bubbleScale:value}),{bubbleScale:value});
+ for(const value of [0,.9,2,'1',null,NaN])assert.throws(()=>validatePatch({bubbleScale:value}));
+ assert.deepEqual(validatePatch({size:.8,bubbleScale:1.4}),{size:.8,bubbleScale:1.4});
 });
 test('local settings bridge authenticates and rejects browser origins and invalid patches',async()=>{
  const base=process.env.INORI_INTEGRATION_TEST_DIR;if(!base)throw Error('Use isolated test directory');

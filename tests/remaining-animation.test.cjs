@@ -7,7 +7,10 @@ for(const skin of ['redwhite','battle']){
   assert.equal(anim.sampleAsset(manifest,'idle',0,59999).clip,'continuousIdle');
   assert.equal(anim.sampleAsset(manifest,'idle',0,60000).clip,'continuousStretch');
   assert.equal(anim.sampleAsset(manifest,'idle',0,61799).frame,15);
-  assert.equal(anim.sampleAsset(manifest,'idle',0,61800).clip,'continuousIdle');
+  const stretchEnd=60000+(manifest.videos?.stretch?.durationMs||1800);
+  assert.equal(anim.sampleAsset(manifest,'idle',0,stretchEnd-1).clip,'continuousStretch');
+  assert.equal(anim.sampleAsset(manifest,'idle',0,stretchEnd).clip,'continuousIdle');
+  assert.equal(anim.sampleAsset(manifest,'idle',0,61800,true).clip,'continuousIdle');
   assert.equal(anim.sampleAsset(manifest,'idle',0,120200).clip,'continuousDoze');
   assert.equal(anim.sampleAsset(manifest,'idle',0,120200).frame,1);
   assert.equal(anim.sampleAsset(manifest,'idle',0,120200,true).frame,7);

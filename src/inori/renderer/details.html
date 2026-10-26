@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'none'"><title>楪祈 · 额度详情</title><link rel="stylesheet" href="style.css"></head>
+<body><main id="scene" data-state="unknown" data-dock="free">
+  <section id="panel" aria-label="额度与用量" hidden>
+    <header><span>楪祈 <small>陪你把事情做好</small></span><div class="header-actions"><button id="refresh" title="刷新额度"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 8a6.5 6.5 0 1 0-.3 5M16.5 3.5V8H12"/></svg></button><button id="close" title="收起详情" aria-label="收起详情"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg></button></div></header>
+    <div class="divider"></div><div id="quota-detail"></div>
+    <section id="daily-usage" aria-label="今日Token用量"><strong>今日 Token</strong><p id="token-total">正在统计…</p><p id="token-million"></p><div id="token-breakdown"></div><p id="token-scope">香港时间</p></section>
+    <p id="account-label"></p><button id="confirm" hidden>确认这是我在 Codex 使用的账户</button><p id="updated"></p>
+    <footer>每日统计按香港时间更新</footer>
+  </section>
+  <div id="avatar" role="button" tabindex="0" aria-label="楪祈，单击互动，双击额度，按住拖动"><canvas id="sprite" width="192" height="208"></canvas><span id="state-dot"></span></div>
+  <button id="chip" aria-label="点击展开或收起额度详情"><span id="compact">额度连接中</span></button>
+</main><script src="../assets/redwhite/manifest.js"></script><script src="../assets/battle/manifest.js"></script><script src="animation.js"></script><script src="video-animation.js"></script><script src="bubble-geometry.js"></script><script src="app.js"></script></body></html>

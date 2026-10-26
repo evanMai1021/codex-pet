@@ -7,7 +7,8 @@ const properties={
  reduced:{type:'boolean',title:'减少动态效果'},
  dockEnabled:{type:'boolean',title:'允许趴边'},
  dock:{type:['string','null'],enum:[null,'left','right','top','bottom'],title:'停靠位置'},
- bubbleEnabled:{type:'boolean',title:'显示任务气泡'},
+ bubbleEnabled:{type:'boolean',title:'自动显示任务气泡'},
+ bubbleScale:{type:'number',enum:[.8,1,1.2,1.4],title:'气泡大小',description:'统一调整任务、额度和今日用量页面，不改变公仔大小。'},
  bubbleTone:{type:'string',enum:['cute','simple'],title:'气泡语气',oneOf:[{const:'cute',title:'可爱 · 撒娇'},{const:'simple',title:'简洁'}]},
  bubbleCustomLine:{type:'string',maxLength:56,title:'我的气泡短句'}
 };

@@ -10,6 +10,7 @@ function show(v){
  $('bubbleTone').value=v.settings.bubbleTone||'cute';
  if(document.activeElement!==$('bubbleCustomLine'))$('bubbleCustomLine').value=v.settings.bubbleCustomLine||'';
  $('bubbleEnabled').checked=v.settings.bubbleEnabled!==false;
+ if(document.activeElement!==$('bubbleScale')){$('bubbleScale').value=Math.round((v.settings.bubbleScale??1)*100);$('bubbleScaleValue').textContent=$('bubbleScale').value+'% · 独立于公仔大小';}
  $('followCodex').checked=v.settings.followCodex===true;
  $('dockEnabled').checked=v.settings.dockEnabled!==false;$('dock').disabled=v.settings.dockEnabled===false;
  $('visible').checked=v.settings.visible;$('reduced').checked=v.settings.reduced;$('dock').value=v.settings.dock||'';
@@ -22,6 +23,8 @@ function show(v){
 function feedback(text,error=false){$('message').textContent=text;$('message').classList.toggle('error',error);}
 async function change(patch){try{show(await window.pet.set(patch));feedback('已保存');}catch(e){try{show(await window.pet.get());}catch{}feedback(e.message,true);}}
 for(const id of ['visible','reduced','dockEnabled','followCodex','bubbleEnabled'])$(id).onchange=()=>change({[id]:$(id).checked});
+$('bubbleScale').oninput=()=>{$('bubbleScaleValue').textContent=$('bubbleScale').value+'% · 独立于公仔大小';};
+$('bubbleScale').onchange=()=>change({bubbleScale:Number($('bubbleScale').value)/100});
 $('bubbleTone').onchange=()=>change({bubbleTone:$('bubbleTone').value});
 $('bubblePhraseState').onchange=showPhraseList;
 $('bubbleCustomLine').onchange=()=>change({bubbleCustomLine:$('bubbleCustomLine').value});

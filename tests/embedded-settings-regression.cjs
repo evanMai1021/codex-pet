@@ -26,11 +26,11 @@ app.whenReady().then(async()=>{
  await window.loadFile(wrapperFile);const js=s=>window.webContents.executeJavaScript(s),doc="document.getElementById('panel').contentWindow.document";
  const checks=[],record=(name,pass)=>checks.push({name,pass});
  for(let i=0;i<100;i++){if(await js(`!${doc}.getElementById('skin').disabled`))break;await wait(100);}
- record('all-ten-settings-enabled-without-native-settings-window',await js(`${doc}.querySelectorAll('.row input,.row select').length===10&&!${doc}.getElementById('skin').disabled`)&&BrowserWindow.getAllWindows().length===2);
+ record('all-thirteen-settings-enabled-without-native-settings-window',await js(`${doc}.querySelectorAll('.row input,.row select').length===13&&!${doc}.getElementById('skin').disabled`)&&BrowserWindow.getAllWindows().length===2);
  record('native-pet-remains-hidden-when-reading',!api.getWindow().isVisible());
  record('no-open-settings-button',await js(`!${doc}.getElementById('open')&&![...${doc}.querySelectorAll('button')].some(b=>b.textContent==='打开设置')`));
  async function change(id,value){await js(`{const el=${doc}.getElementById(${JSON.stringify(id)});el[el.type==='checkbox'?'checked':'value']=${JSON.stringify(value)};el.dispatchEvent(new Event('change'));}`);await wait(400);}
- for(const [id,value,expected] of [['skin','battle','battle'],['size','80',.8],['reduced',true,true],['followCodex',true,true],['bubbleEnabled',false,false],['bubbleTone','simple','simple'],['bubbleCustomLine','陪你一起完成♡','陪你一起完成♡'],['dockEnabled',true,true],['dock','top','top']]){
+ for(const [id,value,expected] of [['detailsScale','140',1.4],['bubbleScale','140',1.4],['skin','battle','battle'],['size','80',.8],['reduced',true,true],['followCodex',true,true],['bubbleEnabled',false,false],['bubbleTone','simple','simple'],['bubbleCustomLine','陪你一起完成♡','陪你一起完成♡'],['dockEnabled',true,true],['dock','top','top']]){
   await change(id,value);record('live-setting-'+id,api.getPanel().get().settings[id]===expected);
  }
  record('native-size-applied',api.getWindow().getBounds().width===Math.round(300*.8));
@@ -45,7 +45,7 @@ app.whenReady().then(async()=>{
  const compat=await server.handle({jsonrpc:'2.0',id:9,method:'tools/call',params:{name:'pet_open_settings',arguments:{}}});
  record('legacy-tool-now-returns-embedded-settings',!!compat.result.structuredContent?.schema&&BrowserWindow.getAllWindows().length===2);
  const saved=JSON.parse(fs.readFileSync(path.join(process.env.INORI_DATA_DIR,'settings.json'),'utf8'));
- record('settings-persisted',saved.skin==='battle'&&saved.size===.8&&saved.bubbleCustomLine==='陪你一起完成♡'&&saved.dockEnabled===false);
+ record('settings-persisted',saved.bubbleScale===1.4&&saved.skin==='battle'&&saved.size===.8&&saved.bubbleCustomLine==='陪你一起完成♡'&&saved.dockEnabled===false);
  record('follow-codex-persisted-separately',JSON.parse(fs.readFileSync(path.join(process.env.CODEX_PET_HOME,'runtime.json'),'utf8')).followCodex===true);
  await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});await wait(150);fs.writeFileSync(path.join(out,'embedded-settings.png'),(await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());
  window.setSize(430,1000);await wait(100);record('narrow-layout-no-horizontal-overflow',await js(`${doc}.documentElement.scrollWidth<=${doc}.documentElement.clientWidth`));

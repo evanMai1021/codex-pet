@@ -1,0 +1,30 @@
+'use strict';
+const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),Module=require('node:module');
+const out=process.env.INORI_TEST_OUT;if(!out||!process.env.INORI_DATA_DIR)throw Error('Isolated paths required');fs.mkdirSync(out,{recursive:true});
+process.argv.push('--no-bridge','--control-only');
+const main=process.env.INORI_TEST_MAIN||path.resolve(__dirname,'../src/inori/main.cjs'),under=new Module(main,module);under.filename=main;under.paths=Module._nodeModulePaths(path.dirname(main));
+under._compile(fs.readFileSync(main,'utf8')+'\nmodule.exports={getWindow:()=>win,getPanel:()=>settingsPanel,getSnapshot:()=>snapshot,send};',main);
+const wait=ms=>new Promise(r=>setTimeout(r,ms)),checks=[],record=(name,pass,data)=>checks.push({name,pass,...data});
+app.whenReady().then(async()=>{
+ const api=under.exports;for(let i=0;i<100&&!api.getPanel();i++)await wait(80);const pet=api.getWindow(),js=s=>pet.webContents.executeJavaScript(s);
+ pet.showInactive();api.getPanel().apply({skin:'redwhite',dock:null,reduced:false});
+ api.getSnapshot().status={state:'idle',label:'模拟待机',threads:[]};api.getSnapshot().lastInteraction=Date.now();api.send();
+ let ready=false;for(let i=0;i<150;i++){await wait(80);if(await js("!!videoAnimation.video&&videoAnimation.video.readyState>=2")){ready=true;break;}}
+ record('real-webm-decoder-ready',ready);
+ if(!ready)throw Error('Video did not become ready');
+ record('video-presented-without-low-resolution-canvas',await js("videoAnimation.video.parentElement===avatar&&getComputedStyle(document.getElementById('sprite')).opacity==='0'"));
+ const before=await js('videoAnimation.video.currentTime');await wait(300);record('video-advances',await js('videoAnimation.video.currentTime')!==before);
+ const pixels=await js("(()=>{const d=ctx.getImageData(0,0,192,208).data;let transparent=0,opaque=0,green=0;for(let i=0;i<d.length;i+=4){if(d[i+3]<10)transparent++;if(d[i+3]>240)opaque++;if(d[i+3]>100&&d[i+1]>d[i]+60&&d[i+1]>d[i+2]+60)green++;}return{transparent,opaque,green,source:videoAnimation.video.currentSrc.split('/').pop(),readbackCount};})()");
+ record('actual-renderer-has-alpha',pixels.transparent>2000&&pixels.opaque>10000,pixels);record('no-green-background',pixels.green<50);
+ await js('window.testIdleDecoder=videoAnimation.video;window.videoLoops=0;window.previousVideoTime=videoAnimation.video.currentTime;videoAnimation.video.addEventListener("timeupdate",()=>{if(videoAnimation.video.currentTime<window.previousVideoTime-.5)window.videoLoops++;window.previousVideoTime=videoAnimation.video.currentTime;});true');
+ const startReads=pixels.readbackCount;await wait(900);const changed=await js('readbackCount')-startReads;record('continuous-frame-updates',changed>=12,{readbacksIn900ms:changed});
+ record('one-decoder-only',await js('videoAnimation.video===window.testIdleDecoder'));
+ await wait(4100);record('video-loops-without-stalling',await js('window.videoLoops>=1&&!videoAnimation.video.paused'));
+ await pet.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});await wait(80);fs.writeFileSync(path.join(out,'actual-idle-video.png'),(await pet.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());
+ await js('data.lastInteraction=Date.now()-121000;idleSince=Date.now()-121000;paint()');await wait(250);record('doze-is-preserved',await js("scene.dataset.idlePhase==='doze'&&!!videoAnimation.video&&videoAnimation.key.includes('doze-seedance')"));
+ await js('data.lastInteraction=Date.now()-301000;idleSince=Date.now()-301000;paint()');record('sleep-is-preserved',await js("scene.dataset.idlePhase==='sleep'&&!videoAnimation.video"));
+ api.getPanel().apply({reduced:true});record('reduced-motion-stops-video',await js('!videoAnimation.video'));
+ api.getPanel().apply({reduced:false,dock:'right'});await wait(300);record('dock-pose-is-preserved',await js("scene.dataset.animation==='dock-right'&&!videoAnimation.video"));
+ api.getPanel().apply({dock:null,skin:'battle'});await wait(500);record('other-outfit-still-uses-own-assets',await js("activeSkin==='battle'&&!videoAnimation.video"));
+ fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:checks.every(c=>c.pass),mode:'actual packaged Electron decoder and renderer; real Seedance Mini video, synthetic idle status',checks},null,2));app.exit(checks.every(c=>c.pass)?0:1);
+}).catch(e=>{fs.writeFileSync(path.join(out,'error.txt'),e.stack);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:false,checks,error:e.message},null,2));app.exit(2);});setTimeout(()=>app.exit(3),30000);

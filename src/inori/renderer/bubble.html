@@ -1,1 +1,16 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'"><link rel="stylesheet" href="bubble.css"><title>楪祈 · 任务气泡</title></head><body><main role="status" aria-live="polite"><div class="head"><button id="headline" title="点击换一句" aria-label="点击更换气泡短句"></button><button id="more" title="打开气泡设置" aria-label="打开气泡设置">•••</button></div><div class="meta"><strong id="label"></strong><span id="count"></span></div><h1 id="title"></h1><div id="stage" hidden></div><p id="progress"></p><p id="action" hidden></p><small id="note" hidden>审批状态来自试验性桌面接口</small></main><script src="bubble.js"></script></body></html>
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'"><link rel="stylesheet" href="bubble.css"><title>楪祈 · 任务气泡</title></head>
+<body><main aria-label="楪祈任务与用量">
+ <header class="meta"><strong id="label"></strong><span id="count"></span><button id="dismiss" class="icon" title="收起气泡" aria-label="收起气泡">×</button></header>
+ <div class="pages">
+  <section id="page-task" role="tabpanel" aria-label="任务">
+   <button id="headline" title="点击换一句" aria-label="点击更换气泡短句"></button>
+   <section class="task"><h1 id="title"></h1><div id="stage" hidden></div><p id="progress"></p></section>
+   <p id="action" hidden></p><small id="note" hidden>审批状态来自试验性桌面接口</small>
+   <section class="chat-usage"><label for="thread">聊天累计用量</label><select id="thread" aria-label="选择聊天用量"></select><div class="number" id="chat-million">正在统计…</div><div class="muted" id="chat-total"></div><small id="chat-health"></small></section>
+  </section>
+  <section id="page-quota" role="tabpanel" aria-label="剩余额度" hidden><div id="quota-windows"></div><p id="quota-health"></p><small id="account"></small><button id="confirm" hidden>确认使用此账户</button><button id="refresh" class="secondary">刷新用量</button></section>
+  <section id="page-usage" role="tabpanel" aria-label="今日Token" hidden><div class="section-title">今日 Token</div><div class="number" id="today-million">正在统计…</div><div class="muted" id="today-total"></div><div id="breakdown"></div><small id="usage-date"></small></section>
+ </div>
+ <nav aria-label="气泡翻页"><button id="previous" class="icon" aria-label="上一页">‹</button><div role="tablist" aria-label="内容页面"><button role="tab" data-page="task" aria-controls="page-task">任务</button><button role="tab" data-page="quota" aria-controls="page-quota">额度</button><button role="tab" data-page="usage" aria-controls="page-usage">今日 Token</button></div><button id="next" class="icon" aria-label="下一页">›</button></nav>
+</main><script src="bubble.js"></script></body></html>

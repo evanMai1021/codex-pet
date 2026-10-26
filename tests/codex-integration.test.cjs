@@ -5,7 +5,7 @@ const server=require('../plugins/codex-pet/server/index.cjs');
 const base=process.env.INORI_INTEGRATION_TEST_DIR;
 test('native plugin settings declare a real open action and a boolean control',async()=>{
  const r=await server.handle({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-11-25'}});
- assert.equal(r.result.serverInfo.version,'0.1.12');
+ assert.equal(r.result.serverInfo.version,require('../package.json').version);
  assert.deepEqual(r.result.capabilities.experimental['openai/settings'],{readTool:'pet_settings_read',updateTool:'pet_settings_update'});
  const list=(await server.handle({jsonrpc:'2.0',id:2,method:'tools/list'})).result.tools;
  assert.equal(list.find(t=>t.name==='pet_open_settings')._meta.ui.resourceUri,'ui://codex-pet/control-panel');

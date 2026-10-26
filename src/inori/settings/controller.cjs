@@ -5,7 +5,7 @@ const {SKINS,normalizeSkin}=require('../skins.cjs');
 const {bubblePhraseGroups,normalizeBubbleTone}=require('../bubble-model.cjs');
 function createSettingsPanel(api){
  let panel;
- function get(){const raw=api.get(),skin=SKINS.find(s=>s.id===normalizeSkin(raw.skin));return {settings:{bubbleTone:normalizeBubbleTone(raw.bubbleTone),bubbleCustomLine:raw.bubbleCustomLine||'',bubbleEnabled:raw.bubbleEnabled!==false,followCodex:raw.followCodex===true,size:raw.size,dock:raw.dock,dockEnabled:raw.dockEnabled,reduced:raw.reduced,visible:raw.visible,skin:skin.id},status:{state:raw.status.state,label:raw.status.label},phrases:bubblePhraseGroups(raw),skin,skins:SKINS};}
+ function get(){const raw=api.get(),skin=SKINS.find(s=>s.id===normalizeSkin(raw.skin));return {settings:{bubbleScale:raw.bubbleScale??1,bubbleTone:normalizeBubbleTone(raw.bubbleTone),bubbleCustomLine:raw.bubbleCustomLine||'',bubbleEnabled:raw.bubbleEnabled!==false,followCodex:raw.followCodex===true,size:raw.size,dock:raw.dock,dockEnabled:raw.dockEnabled,reduced:raw.reduced,visible:raw.visible,skin:skin.id},status:{state:raw.status.state,label:raw.status.label},phrases:bubblePhraseGroups(raw),skin,skins:SKINS};}
  function apply(patch){api.apply(require('./schema.cjs').validatePatch(patch,get().settings));publish();return get();}
  function publish(){if(panel&&!panel.isDestroyed())panel.webContents.send('pet:update',get());}
  async function open(){

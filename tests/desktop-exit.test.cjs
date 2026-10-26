@@ -1,5 +1,17 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
-const {createDesktopExitGate}=require('../src/inori/desktop-exit.cjs');
+const {createDesktopExitGate,createDesktopPidWatch}=require('../src/inori/desktop-exit.cjs');
+
+test('bound main PID exits even after bridge stops or renderer survives',()=>{
+ let alive=true;const watch=createDesktopPidWatch(pid=>pid===100?alive:true);
+ watch.bind([100]);assert.equal(watch.shouldQuit(),false);
+ alive=false;watch.bind([101]);assert.equal(watch.shouldQuit(),false);assert.equal(watch.shouldQuit(),true);
+});
+test('PID watch ignores unknown, malformed and unbound evidence',()=>{
+ let state=null;const watch=createDesktopPidWatch(()=>state);
+ watch.bind([0]);assert.equal(watch.shouldQuit(),false);watch.bind([100]);
+ assert.equal(watch.shouldQuit(),false);state=false;assert.equal(watch.shouldQuit(),false);
+ state=null;assert.equal(watch.shouldQuit(),false);state=false;assert.equal(watch.shouldQuit(),false);assert.equal(watch.shouldQuit(),true);
+});
 test('standalone launch without seeing Codex remains usable',()=>{
  const gate=createDesktopExitGate();assert.equal(gate(false),false);assert.equal(gate(false),false);
 });

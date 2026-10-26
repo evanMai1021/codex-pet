@@ -6,7 +6,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from desktop_lifecycle import desktop_running
+from desktop_lifecycle import monitor_desktop
+from daily_usage import DailyUsageReader
+from thread_usage import ThreadUsageReader
 import queue
 import sqlite3
 import subprocess
@@ -19,9 +21,11 @@ STARTED = time.time()
 SOURCE_NAMES = ('Codex Desktop', 'codex_work_desktop')
 INPUT_TOOLS = {'request_user_input','functions.request_user_input'}
 events = queue.Queue()
+output_lock = threading.Lock()
 
 def emit(value):
-    print(json.dumps(value,ensure_ascii=False),flush=True)
+    with output_lock:
+        print(json.dumps(value,ensure_ascii=False),flush=True)
 
 def connect(name):
     path=HOME/name
@@ -185,11 +189,12 @@ def safe_limits(raw):
 
 def main():
     reader=StatusReader();quota=QuotaClient();closing=threading.Event();refresh=threading.Event();refresh.set()
+    usage=DailyUsageReader(HOME);thread_usage=ThreadUsageReader(HOME);usage_refresh=threading.Event();usage_refresh.set()
     def input_loop():
         for line in sys.stdin:
             try:command=json.loads(line)
             except ValueError:continue
-            if command.get('command')=='refreshQuota':refresh.set()
+            if command.get('command')=='refreshQuota':refresh.set();usage_refresh.set()
             if command.get('command')=='quit':break
         closing.set()
     def quota_loop():
@@ -202,13 +207,17 @@ def main():
                     events.put({'kind':'quota','healthy':False,'reason':'官方额度查询不可用','updatedAt':int(time.time()*1000)})
         quota.close()
     def desktop_loop():
+        monitor_desktop(closing, emit)
+    def usage_loop():
         while not closing.is_set():
-            try:running=desktop_running()
-            except (OSError,ValueError):running=None
-            events.put({'kind':'desktopLifecycle','running':running})
-            closing.wait(2)
+            usage_refresh.wait(30);usage_refresh.clear()
+            if closing.is_set():break
+            events.put(thread_usage.snapshot())
+            try:events.put(usage.snapshot())
+            except (OSError,ValueError):events.put({'kind':'dailyUsage','health':'unavailable','totalTokens':None})
     threading.Thread(target=input_loop,daemon=True).start();threading.Thread(target=quota_loop,daemon=True).start()
     threading.Thread(target=desktop_loop,daemon=True).start()
+    threading.Thread(target=usage_loop,daemon=True).start()
     next_quota=time.monotonic()+120;next_status=0
     try:
         while not closing.wait(.1):

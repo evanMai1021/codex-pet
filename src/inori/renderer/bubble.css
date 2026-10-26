@@ -1,1 +1,42 @@
-*{box-sizing:border-box}html,body{margin:0;background:transparent;font:12px/1.45 "Microsoft YaHei",sans-serif;color:#323840;overflow:hidden;height:100%}main{margin:3px;padding:12px 15px;background:rgba(249,249,252,.98);border:1px solid #dedfe6;border-radius:24px;height:calc(100% - 6px)}button{font:inherit;border:0;cursor:pointer}.head{display:flex;align-items:center;gap:8px}#headline{padding:0;background:transparent;text-align:left;flex:1;min-width:0;color:#30343c;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#headline:hover{color:#596c98}#more{flex:none;width:30px;height:30px;border-radius:50%;background:#e6edff;color:#6682b4;font-weight:700;letter-spacing:1px}#more:hover{background:#dbe5fb}button:focus-visible{outline:2px solid #829bc9;outline-offset:2px}.meta{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10px;color:#647084;margin-top:2px}.meta strong{font-weight:600}h1{margin:4px 0;font-size:11px;font-weight:500;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#59616e}#stage{font-size:10px;color:#77808e}p{margin:2px 0 0;font-size:10px;color:#687180;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}#action{margin-top:6px;color:#705b41;font-weight:600;font-size:11px}small{display:block;color:#818794;font-size:9px;margin-top:3px}[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:transparent;font:12px/1.5 "Microsoft YaHei UI","Microsoft YaHei",sans-serif;color:#55434f}
+main{--accent:#b66f92;--tint:#f5e5ee;position:relative;margin:4px;height:calc(100% - 8px);padding:12px 15px;background:linear-gradient(145deg,#fffafdfc,#fffdfef7);border:1px solid #ecdce5;border-radius:20px;box-shadow:0 2px 5px #70465b0d;overflow:hidden}
+main[data-state=working]{--accent:#748b76;--tint:#edf2ec}
+main[data-state=waiting]{--accent:#aa7b40;--tint:#fbf0df}
+main[data-state=error]{--accent:#bd6d79;--tint:#fbe9ed}
+main[data-state=completed]{--accent:#668f89;--tint:#e7f3ef}
+.meta{display:flex;align-items:center;justify-content:space-between;gap:8px;height:20px;font-size:10px}
+#label{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:2px 8px;border-radius:8px;color:var(--accent);background:var(--tint);font-size:10px;font-weight:600;white-space:nowrap}
+#label:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex:none}
+#count{font-size:10px;color:#a4919d;white-space:nowrap}
+#headline{display:block;width:100%;margin:6px 0 7px;padding:0;border:0;background:transparent;color:#654658;font:600 13px/20px "Microsoft YaHei UI","Microsoft YaHei",sans-serif;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:pointer}
+#headline:hover{color:#b4668c}
+#headline:focus-visible{outline:2px solid #cf9bb6;outline-offset:2px;border-radius:4px}
+.task{border-left:2px solid #ead7e2;padding-left:9px}
+h1{margin:0;color:#625462;font-size:12px;font-weight:600;line-height:18px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#stage{color:#998493;font-size:10px;line-height:16px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+p{margin:3px 0 0;color:#93808e;font-size:10px;line-height:16px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+#action{margin-top:7px;padding:5px 8px;border-radius:8px;background:var(--tint);color:var(--accent);font-size:10px;line-height:15px;font-weight:600;-webkit-line-clamp:2}
+small{display:block;margin-top:3px;color:#a4919d;font-size:9px;line-height:12px}
+[hidden]{display:none!important}
+
+/* Shared fixed viewport: changing pages never resizes the native window. */
+main{display:flex;flex-direction:column;padding:12px 14px}
+button,select{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible{outline:2px solid #ca91af;outline-offset:2px}
+.meta{flex:0 0 22px}#count{margin-left:auto}.icon{border:0;border-radius:8px;background:transparent;font-size:19px;line-height:24px;min-width:24px;padding:0;color:#9b6a85}.icon:hover{background:#f5e5ee}#dismiss{margin-left:2px}
+.pages{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#e5c6d6 transparent;padding-right:2px}
+nav{display:flex;align-items:center;gap:3px;padding-top:8px;margin-top:8px;border-top:1px solid #eedee7;flex:0 0 34px}nav [role=tablist]{display:flex;flex:1;gap:3px}nav [role=tab]{flex:1;border:0;background:transparent;border-radius:8px;padding:5px 3px;font-size:11px;white-space:nowrap;color:#947586}nav [aria-selected=true]{background:#f4e3ed;color:#955579;font-weight:600}
+.chat-usage{margin-top:10px;padding:9px 10px;background:#faf1f6;border:1px solid #f0dfe8;border-radius:12px}.chat-usage label{display:block;color:#9c7c8e;font-size:10px;margin-bottom:4px}select{display:block;width:100%;min-width:0;padding:4px 5px;border:1px solid #e7cddd;background:#fffafd;border-radius:6px;font-size:11px}
+.number{font-size:22px;line-height:1.3;font-weight:700;color:#644858;font-variant-numeric:tabular-nums;margin:7px 0 1px}.chat-usage .number{font-size:19px}.muted{font-size:12px;color:#a17c91}#chat-health{margin-top:4px}.section-title{font-size:13px;color:#9b6a85;margin-top:10px}
+.quota-row{padding:10px 11px;margin:9px 0;border:1px solid #eddae5;border-radius:12px;background:#fffafb}.quota-title{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#91677e}.quota-title strong{font-size:22px;color:#644858;line-height:1.3}.bar{height:5px;border-radius:5px;background:#efdfE8;margin:7px 0;overflow:hidden}.bar span{height:100%;display:block;background:#cb8daa;border-radius:5px}
+#quota-health{display:block;-webkit-line-clamp:unset;font-size:10px}.secondary,#confirm{border:1px solid #e7cddd;background:#f9edf4;border-radius:8px;padding:5px 9px;font-size:11px;margin-top:8px}#account{overflow-wrap:anywhere}#confirm{display:block}
+#breakdown{margin-top:10px;padding-top:3px;border-top:1px solid #efdee7}.token-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin:9px 0;font-size:12px}.token-row strong{text-align:right;font-size:13px;color:#644858}.token-row small{font-size:10px;font-weight:400;margin-top:1px}#usage-date{margin-top:10px}
+#page-quota .quota-row{padding:8px 10px;margin:7px 0}#page-quota .bar{margin:6px 0}#refresh{margin-top:5px;padding:4px 9px}#breakdown .token-row{margin:7px 0}#page-usage .section-title{margin-top:6px}#usage-date{margin-top:6px}
+
+/* Task content leads; conversation usage remains a compact secondary summary. */
+#page-task h1{font-size:16px;line-height:23px;font-weight:700;color:#57414f;white-space:normal;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+#page-task #stage,#page-task #progress{font-size:12px;line-height:18px;color:#87717f}
+#page-task .chat-usage{padding:7px 9px;background:#fcf7fa;border-color:#f1e5ec}
+#page-task .chat-usage select{font-size:10px;padding:3px 5px}
+#page-task .chat-usage .number{font-size:14px;line-height:19px;font-weight:600;color:#8e7181;margin-top:5px}
+#page-task .chat-usage .muted{font-size:10px;color:#aa92a0}

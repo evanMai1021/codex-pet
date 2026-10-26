@@ -11377,5 +11377,71 @@
     "sleep": "continuousSleepLoop",
     "doze": "continuousDoze",
     "stretch": "continuousStretch"
+  },
+  "videos": {
+    "idle": {
+      "file": "videos/idle-seedance-mini-detail-v2.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664
+    },
+    "working": {
+      "file": "videos/working-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664
+    },
+    "waiting": {
+      "file": "videos/waiting-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 9791.666666666666
+    },
+    "completed": {
+      "file": "videos/completed-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4041.666666666667
+    },
+    "error": {
+      "file": "videos/error-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4041.666666666667
+    },
+    "interrupted": {
+      "file": "videos/interrupted-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4041.666666666667
+    },
+    "unknown": {
+      "file": "videos/unknown-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665
+    },
+    "wave": {
+      "file": "videos/wave-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4041.666666666667
+    },
+    "peace": {
+      "file": "videos/peace-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4041.666666666667
+    },
+    "stretch": {
+      "file": "videos/stretch-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4041.666666666667
+    },
+    "doze": {
+      "file": "videos/doze-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665
+    }
   }
 }

@@ -38,8 +38,11 @@ jobs:
       - name: Check logic and both outfit manifests
         env:
           INORI_INTEGRATION_TEST_DIR: ${{ github.workspace }}/.release-tests
+          INORI_USAGE_TEST_DIR: ${{ github.workspace }}/.release-tests/usage
         run: |
           node --test --test-isolation=none tests/*.test.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python -B -m unittest discover -s tests -p 'test_*.py'
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python -B scripts/validate_builtin_assets.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

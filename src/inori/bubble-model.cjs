@@ -33,11 +33,24 @@ function taskBubble(snapshot){
   action:state==='waiting'?(approval?'请到 Codex 查看并决定是否批准':'请到 Codex 查看需要回答或处理的提示'):'',
   count:threads.length,approval,experimental:approval&&status.statusSource==='desktop-ipc-experimental'};
 }
-function placeBubble(anchor,area,width=276,height=136){
+function placeBubble(anchor,area,width=276,height=136,obstacles=[]){
  const gap=10;
- let x=anchor.x+anchor.width+gap,y=anchor.y+(anchor.height-height)/2;
- if(x+width>area.x+area.width)x=anchor.x-width-gap;
- if(x<area.x){x=anchor.x+(anchor.width-width)/2;y=anchor.y-height-gap;if(y<area.y)y=anchor.y+anchor.height+gap;}
- return {x:Math.round(Math.max(area.x,Math.min(x,area.x+Math.max(0,area.width-width)))),y:Math.round(Math.max(area.y,Math.min(y,area.y+Math.max(0,area.height-height)))),width:Math.min(width,area.width),height:Math.min(height,area.height)};
+ width=Math.min(width,area.width);height=Math.min(height,area.height);
+ const cx=anchor.x+(anchor.width-width)/2,cy=anchor.y+(anchor.height-height)/2;
+ const candidates=[[anchor.x+anchor.width+gap,cy],[anchor.x-width-gap,cy],[cx,anchor.y-height-gap],[cx,anchor.y+anchor.height+gap]];
+ // Try aligned alternatives around the other floating panel before giving up.
+ if(obstacles.length){
+  const xs=[anchor.x+anchor.width+gap,anchor.x-width-gap,cx,area.x,area.x+area.width-width];
+  const ys=[cy,anchor.y-height-gap,anchor.y+anchor.height+gap,area.y,area.y+area.height-height];
+  for(const other of obstacles){xs.push(other.x-width-gap,other.x+other.width+gap);ys.push(other.y-height-gap,other.y+other.height+gap);}
+  const alternatives=xs.flatMap(x=>ys.map(y=>[x,y]));
+  alternatives.sort((a,b)=>(a[0]-cx)**2+(a[1]-cy)**2-((b[0]-cx)**2+(b[1]-cy)**2));
+  candidates.push(...alternatives);
+ }
+ for(const [x,y] of candidates){
+  const r={x:Math.round(Math.max(area.x,Math.min(x,area.x+area.width-width))),y:Math.round(Math.max(area.y,Math.min(y,area.y+area.height-height))),width,height};
+  if([anchor,...obstacles].every(other=>r.x+r.width<=other.x-gap||r.x>=other.x+other.width+gap||r.y+r.height<=other.y-gap||r.y>=other.y+other.height+gap))return r;
+ }
+ return null;
 }
 module.exports={taskBubble,placeBubble,bubbleHeadline,bubblePhraseGroups,normalizeBubbleTone};

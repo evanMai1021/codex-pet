@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "codex-pet",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "楪祈桌宠的图形控制与任务气泡设置入口",
   "extensions": {
     "com.openai": {

@@ -33,6 +33,12 @@ function timedClip(manifest,clip,elapsed,reduced=false){
  return {clip,frame:reduced?(value.reducedFrame??0):value.loop?n%count:Math.min(count-1,n)};
 }
 function sampleAsset(manifest,state,elapsed,idleMs=0,reduced=false){
+ // A generated stretch must finish before the ordinary idle phase resumes.
+ const stretchDuration=manifest.videos?.stretch?.durationMs;
+ if(state==='idle'&&!reduced&&Number.isFinite(stretchDuration)&&idleMs>=60000&&idleMs<60000+stretchDuration){
+  const clip=manifest.idlePhases?.stretch,timed=clip&&timedClip(manifest,clip,idleMs-60000,false);
+  if(timed)return{...timed,phase:'stretch'};
+ }
  const original=sample(state,elapsed,idleMs,reduced);
  if(state==='idle'&&original.phase!=='awake'){
   const phase=original.phase,phases=manifest.idlePhases||{};
