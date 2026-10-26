@@ -34,3 +34,4 @@ jobs:
           $after = gh api "repos/$env:GH_REPO/releases/$id" 2>&1
           if ($LASTEXITCODE -eq 0 -or ($after | Out-String) -notmatch '404') { throw 'Draft absence was not confirmed' }
           Write-Output 'Deleted obsolete draft release ID 424642791 and its four assets; consolidated 0.1.14 preserved'
+          exit 0
