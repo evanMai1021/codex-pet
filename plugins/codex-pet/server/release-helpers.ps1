@@ -1,5 +1,6 @@
 param([ValidateSet('probe','extract','plugin','stop')][string]$Mode,[string]$Archive,[string]$Destination,[string]$Source,[string]$Executable,[int]$PetPid)
 $ErrorActionPreference='Stop'
+[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
 if($Mode -eq 'stop'){
  $process=Get-CimInstance Win32_Process -Filter "ProcessId = $PetPid"
  if(!$process){exit 0}
@@ -10,9 +11,46 @@ if($Mode -eq 'stop'){
 if($Mode -eq 'probe' -or $Mode -eq 'plugin'){
  $command=Get-Command codex -ErrorAction Stop
  if($Mode -eq 'probe'){Write-Output 'ready';exit 0}
- & $command.Source plugin marketplace add $Source
+ $catalogText=& $command.Source plugin marketplace list --json
  if($LASTEXITCODE){exit $LASTEXITCODE}
+ $registered=($catalogText | ConvertFrom-Json).marketplaces | Where-Object {$_.name -eq 'inori-pet-local'}
+ $restoreFiles=@()
+ if($registered){
+  $existingRoot=[IO.Path]::GetFullPath($registered.root)
+  $manifestPath=Join-Path $existingRoot '.agents/plugins/marketplace.json'
+  $entry=((Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json).plugins | Where-Object {$_.name -eq 'codex-pet'})
+  if(!$entry -or $entry.source.source -ne 'local'){throw 'Existing plugin source requires manual review'}
+  $pluginPath=[IO.Path]::GetFullPath((Join-Path $existingRoot $entry.source.path))
+  if(!$pluginPath.StartsWith($existingRoot+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Existing plugin source escaped marketplace'}
+  $wanted=Get-Content -LiteralPath (Join-Path $Source 'plugins/codex-pet/plugin.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+  $managed=$existingRoot -match '\\.codex\\|\\.cache\\' -or (Test-Path -LiteralPath (Join-Path $existingRoot '.git'))
+  if($managed){
+   & $command.Source plugin marketplace upgrade inori-pet-local --json
+   if($LASTEXITCODE){exit $LASTEXITCODE}
+   $available=Get-Content -LiteralPath (Join-Path $pluginPath 'plugin.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+   if($available.version -ne $wanted.version){throw 'Marketplace is pinned or not refreshed to this release'}
+  }else{
+   $incoming=[IO.Path]::GetFullPath((Join-Path $Source 'plugins/codex-pet'))
+   $backup=Join-Path $Source 'plugin-source-before'
+   foreach($file in Get-ChildItem -LiteralPath $incoming -File -Recurse){
+    $relative=$file.FullName.Substring($incoming.Length+1)
+    $target=Join-Path $pluginPath $relative
+    if(Test-Path -LiteralPath $target){
+     $saved=Join-Path $backup $relative
+     New-Item -ItemType Directory -Force (Split-Path $saved) | Out-Null
+     Copy-Item -LiteralPath $target -Destination $saved
+     $restoreFiles+=@{source=$saved;target=$target}
+    }
+    New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $target
+   }
+  }
+ }else{
+  & $command.Source plugin marketplace add $Source
+  if($LASTEXITCODE){exit $LASTEXITCODE}
+ }
  & $command.Source plugin add codex-pet@inori-pet-local --json
+ if($LASTEXITCODE){foreach($item in $restoreFiles){Copy-Item -LiteralPath $item.source -Destination $item.target}}
  exit $LASTEXITCODE
 }
 Add-Type -AssemblyName System.IO.Compression.FileSystem

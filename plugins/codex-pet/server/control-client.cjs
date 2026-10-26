@@ -18,9 +18,11 @@ function requestSettings(patch,route='/settings'){return new Promise((resolve,re
 let connecting;
 async function connect(){
  try{return await requestSettings();}catch{}
+ if(require('./release-manager.cjs').status().state?.stage==='switching')throw Error('正在切换桌宠版本，请稍后重试');
  if(!connecting)connecting=(async()=>{
   await integration.launchPet(['--control-only']);
-  for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));try{return await requestSettings();}catch{}}
+  for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,150));try{return await requestSettings();}catch{}
+ if(require('./release-manager.cjs').status().state?.stage==='switching')throw Error('正在切换桌宠版本，请稍后重试');}
   throw Error('无法连接桌宠设置，请确认已更新桌宠程序');
  })().finally(()=>{connecting=null;});
  return connecting;
