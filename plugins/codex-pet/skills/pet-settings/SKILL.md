@@ -9,6 +9,6 @@ description: 在 Codex 内调整楪祈桌宠的服装、显示、大小、趴边
 
 桌宠未启动时，设置接口连接后台实例，不主动显示公仔；显示需要“打开宠物”或 visible 开关。插件面板所有修改立即应用并自动保存。随 Codex 启动不添加开机启动项。
 
-如提示未配置位置，参考 docs/INSTALL.md，由用户选择已安装的本地 exe 并使用 scripts/configure_plugin.py 配置；不读取凭据或安装目录。
+如提示未配置位置，显示版本更新区域；用户要求安装时调用 pet_update_install，进度调用 pet_update_status。仅查询更新用 pet_update_check，不自动下载。也可按随包说明手动配置 exe；不读取凭据或 Codex 安装目录。
 
 制作新角色使用 create-codex-pet Skill；内置服装选择不表示支持运行时导入任意角色包。

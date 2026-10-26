@@ -19,7 +19,7 @@ const desktopPidWatch=require('./desktop-exit.cjs').createDesktopPidWatch();
 const WIDTH=300,HEIGHT=560;
 const ROOT=path.resolve(__dirname,'../..');
 const DATA=process.env.INORI_DATA_DIR||(app.isPackaged?path.resolve(ROOT,'../run-data'):path.join(ROOT,'run-data'));
-fs.mkdirSync(DATA,{recursive:true});app.setPath('userData',DATA);app.setName('楪祈 Codex 桌宠 0.1.13');
+fs.mkdirSync(DATA,{recursive:true});app.setPath('userData',DATA);app.setName('楪祈 Codex 桌宠 0.1.14');
 const smoke=process.argv.includes('--smoke');
 const liveCheck=process.argv.includes('--live-check');
 let win,bridge,quitting=false,hovered=false,urgentTimer,saveTimer,drag=null,regions=[],settlePlacement=false;
@@ -164,7 +164,7 @@ function setSkin(id){settings.skin=normalizeSkin(id);snapshot.skin=settings.skin
 function setDockEnabled(value){settings.dockEnabled=value;setDock(value?settings.dock:null);}
 function setDock(edge){if(edge&&!settings.dockEnabled)return;settlePlacement=settings.dock!==edge;settings.dock=edge;snapshot.dock=edge;snapshot.peek=false;relocate();}
 function menu(){return Menu.buildFromTemplate([
-  {label:'楪祈桌宠 0.1.13',enabled:false},
+  {label:'楪祈桌宠 0.1.14',enabled:false},
   {label:'自动显示任务气泡',type:'checkbox',checked:settings.bubbleEnabled!==false,click:()=>setBubbleEnabled(settings.bubbleEnabled===false)},
   {label:'气泡大小',submenu:[.8,1,1.2,1.4].map((scale,i)=>({label:['小（80%）','标准（100%）','大（120%）','更大（140%）'][i],type:'radio',checked:settings.bubbleScale===scale,click:()=>settingsPanel.apply({bubbleScale:scale})}))},
   {label:'回到屏幕中间 / 解除停靠',click:()=>{settings.dock=null;snapshot.dock=null;const a=screen.getPrimaryDisplay().workArea;win.setPosition(Math.round(a.x+(a.width-WIDTH*settings.size)/2),Math.round(a.y+(a.height-HEIGHT*settings.size)/2));snapshot.lastInteraction=Date.now();save();send();}},
@@ -193,7 +193,7 @@ else{
     writeLifecycle({quitReason,hiddenAt:new Date().toISOString()});
     settingsControl?.close();taskBubble.close();
     let finished=false;
-    const finish=()=>{if(finished)return;finished=true;clearTimeout(deadline);writeLifecycle({cleanupFinishedAt:new Date().toISOString()});app.exit(0);};
+    const finish=()=>{if(finished)return;finished=true;clearTimeout(deadline);writeLifecycle({cleanupFinishedAt:new Date().toISOString()});setTimeout(()=>app.exit(0),0);};
     const deadline=setTimeout(()=>{if(bridge&&!bridge.killed)bridge.kill();finish();},3500);
     bridge?.once('exit',finish);shutdownBridge();
     if(!bridge||bridge.exitCode!==null&&bridge.exitCode!==undefined)finish();
@@ -250,7 +250,14 @@ else{
       apply:patch=>{for(const key of ['bubbleScale','bubbleTone','bubbleCustomLine'])if(key in patch)settings[key]=patch[key];updateTaskBubble();if('bubbleEnabled'in patch)setBubbleEnabled(patch.bubbleEnabled);if('followCodex'in patch)integration.setFollowCodex(patch.followCodex);if('skin'in patch)setSkin(patch.skin);if('dockEnabled'in patch)setDockEnabled(patch.dockEnabled);if('size'in patch)resizePet(patch.size);if('dock'in patch)setDock(patch.dock);if('reduced'in patch){settings.reduced=patch.reduced;snapshot.reduced=patch.reduced;}if('visible'in patch){if(patch.visible)win.showInactive();else win.hide();}save();send();}
     });
     await win.loadFile(path.join(__dirname,'renderer/index.html'));relocate();
-    settingsControl=await require('./settings/control-server.cjs').startControlServer(settingsPanel,DATA);
+    const leaseWatch=require('./desktop-exit.cjs').createPluginLeaseWatch(()=>integration.readConfig().followCodex===true,()=>{
+      setTimeout(()=>{if(!quitting&&!leaseWatch.hasOwners()){quitReason='plugin-connections-closed';app.quit();}},50);
+    });
+    settingsControl=await require('./settings/control-server.cjs').startControlServer(settingsPanel,DATA,message=>{
+      if(message?.action==='upgrade'){setImmediate(()=>{if(!quitting){quitReason='version-upgrade';app.quit();}});return {closing:true};}
+      // Reply before shutdown closes this connection.
+      return leaseWatch(message);
+    });
     if(process.argv.includes('--settings'))await settingsPanel.open();
     if(!process.argv.includes('--no-bridge')){desktopStatus=new DesktopStatusClient({onUpdate:()=>{if(!quitting)publishStatus();}});desktopStatus.start();startBridge();}
     const desktopWatchTimer=setInterval(()=>{

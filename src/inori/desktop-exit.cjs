@@ -24,4 +24,14 @@ function createDesktopPidWatch(isAlive=pid=>{
   }
  };
 }
-module.exports={createDesktopExitGate,createDesktopPidWatch};
+function createPluginLeaseWatch(enabled,quit){
+ const owners=new Set();
+ const watch=message=>{
+  if(!message||!['attach','release'].includes(message.action)||!Number.isInteger(message.pid)||message.pid<=0)throw Error('插件连接信息无效');
+  if(message.action==='attach')owners.add(message.pid);
+  else if(owners.delete(message.pid)&&owners.size===0&&enabled())quit();
+  return {connected:owners.size};
+ };
+ watch.hasOwners=()=>owners.size>0;return watch;
+}
+module.exports={createDesktopExitGate,createDesktopPidWatch,createPluginLeaseWatch};

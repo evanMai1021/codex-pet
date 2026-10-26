@@ -10,6 +10,10 @@ const main=process.env.INORI_TEST_MAIN||path.resolve(__dirname,'../src/inori/mai
 const under=new Module(main,module);under.filename=main;under.paths=Module._nodeModulePaths(path.dirname(main));
 under._compile(fs.readFileSync(main,'utf8')+'\nmodule.exports={getPanel:()=>settingsPanel,getWindow:()=>win,getSnapshot:()=>snapshot};',main);
 const api=under.exports,server=require('../plugins/codex-pet/server/index.cjs'),wait=ms=>new Promise(r=>setTimeout(r,ms));
+const releases=require('../plugins/codex-pet/server/release-manager.cjs');let installCalls=0;
+releases.check=async()=>({pluginVersion:'0.1.14',runtimeVersion:'0.1.14',latestVersion:'0.1.15',ready:true,updateAvailable:true,notes:'模拟更新说明：保留设置'});
+releases.install=async()=>{installCalls++;return {started:true,message:'模拟后台更新'};};
+releases.status=()=>({pluginVersion:'0.1.14',runtimeVersion:'0.1.14',latestVersion:'0.1.15',ready:true,updateAvailable:true,notes:'模拟更新说明：保留设置',state:{stage:'complete',message:'模拟更新调用完成，未下载或安装'}});
 let window;
 ipcMain.handle('test:embedded',(event,m)=>{if(event.sender!==window.webContents)throw Error('Unknown host');return server.handle(m);});
 app.whenReady().then(async()=>{
@@ -26,19 +30,23 @@ app.whenReady().then(async()=>{
  await window.loadFile(wrapperFile);const js=s=>window.webContents.executeJavaScript(s),doc="document.getElementById('panel').contentWindow.document";
  const checks=[],record=(name,pass)=>checks.push({name,pass});
  for(let i=0;i<100;i++){if(await js(`!${doc}.getElementById('skin').disabled`))break;await wait(100);}
- record('all-thirteen-settings-enabled-without-native-settings-window',await js(`${doc}.querySelectorAll('.row input,.row select').length===13&&!${doc}.getElementById('skin').disabled`)&&BrowserWindow.getAllWindows().length===2);
+ record('all-eleven-settings-enabled-without-native-settings-window',await js(`${doc}.querySelectorAll('.row input,.row select').length===11&&!${doc}.getElementById('skin').disabled`)&&BrowserWindow.getAllWindows().length===2);
+ await wait(400);
+ record('update-card-shows-runtime-plugin-latest',await js(`${doc}.getElementById('updateVersions').textContent.includes('0.1.15')`));
+ record('update-button-enabled-for-new-release',await js(`!${doc}.getElementById('installUpdate').disabled`));
+ await js(`${doc}.getElementById('installUpdate').click()`);await wait(200);record('update-button-invokes-packaged-tool',installCalls===1);
  record('native-pet-remains-hidden-when-reading',!api.getWindow().isVisible());
  record('no-open-settings-button',await js(`!${doc}.getElementById('open')&&![...${doc}.querySelectorAll('button')].some(b=>b.textContent==='打开设置')`));
  async function change(id,value){await js(`{const el=${doc}.getElementById(${JSON.stringify(id)});el[el.type==='checkbox'?'checked':'value']=${JSON.stringify(value)};el.dispatchEvent(new Event('change'));}`);await wait(400);}
- for(const [id,value,expected] of [['detailsScale','140',1.4],['bubbleScale','140',1.4],['skin','battle','battle'],['size','80',.8],['reduced',true,true],['followCodex',true,true],['bubbleEnabled',false,false],['bubbleTone','simple','simple'],['bubbleCustomLine','陪你一起完成♡','陪你一起完成♡'],['dockEnabled',true,true],['dock','top','top']]){
+ for(const [id,value,expected] of [['bubbleScale','140',1.4],['skin','battle','battle'],['size','80',.8],['reduced',true,true],['followCodex',true,true],['bubbleEnabled',false,false],['bubbleTone','simple','simple'],['bubbleCustomLine','陪你一起完成♡','陪你一起完成♡'],['dockEnabled',true,true],['dock','top','top']]){
   await change(id,value);record('live-setting-'+id,api.getPanel().get().settings[id]===expected);
  }
  record('native-size-applied',api.getWindow().getBounds().width===Math.round(300*.8));
  await change('visible',true);record('show-native-pet',api.getWindow().isVisible());await change('visible',false);
  await change('dockEnabled',false);record('dock-disabled-clears-current-edge',api.getPanel().get().settings.dock===null&&await js(`${doc}.getElementById('dock').disabled`));
- await js(`${doc}.querySelector('details').open=true;${doc}.getElementById('bubblePhraseState').value='working';${doc}.getElementById('bubblePhraseState').dispatchEvent(new Event('change'));`);
+ await js(`${doc}.getElementById('bubblePhraseState').closest('details').open=true;${doc}.getElementById('bubblePhraseState').value='working';${doc}.getElementById('bubblePhraseState').dispatchEvent(new Event('change'));`);
  record('phrase-list-shares-runtime-and-custom-line',await js(`${doc}.getElementById('bubblePhraseList').textContent.includes('陪你一起完成♡')`));
- await change('bubbleTone','cute');record('phrase-list-keeps-selected-state-and-expansion',await js(`${doc}.querySelector('details').open&&${doc}.getElementById('bubblePhraseState').value==='working'&&${doc}.getElementById('bubbleTone').options.length===2`));
+ await change('bubbleTone','cute');record('phrase-list-keeps-selected-state-and-expansion',await js(`${doc}.getElementById('bubblePhraseState').closest('details').open&&${doc}.getElementById('bubblePhraseState').value==='working'&&${doc}.getElementById('bubbleTone').options.length===2`));
  await js('rejectNext=true');await change('skin','redwhite');record('failed-save-rolls-back-and-reenables',await js(`${doc}.getElementById('skin').value==='battle'&&!${doc}.getElementById('skin').disabled&&${doc}.getElementById('message').classList.contains('error')`));
  const response=await server.handle({jsonrpc:'2.0',id:8,method:'tools/call',params:{name:'pet_settings_update',arguments:{set:{size:1,visible:'bad'}}}});
  record('invalid-mixed-patch-is-atomic',response.result.isError===true&&api.getPanel().get().settings.size===.8);
