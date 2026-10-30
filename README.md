@@ -6,20 +6,54 @@ Windows 桌面悬浮公仔。默认红白服楪祈，可选红黑战斗服。安
 
 上图额度为隔离检查中的模拟数据。两套内置服装可在[设置窗口](docs/images/outfits.png)中选择，截图状态同为模拟数据。
 
-## 开始使用
+## 安装与使用
 
-- 普通用户：使用随 Release 提供的 Windows 便携包，解压后运行 `楪祈桌宠.exe`。源码 ZIP 本身不是可执行安装包。
+### 直接运行便携版
+
+1. 打开[正式下载页](https://github.com/evanMai1021/codex-pet/releases/latest)，下载 `inori-codex-pet-v0.1.14.zip`。`codex-pet-source` 是源码包，不能直接当程序运行。
+2. 解压到有写入权限的目录，再双击 `楪祈桌宠.exe`；不要在ZIP压缩包内运行。
+3. 在Codex插件面板调整服装、大小、趴边和气泡。独立使用时，可运行 `楪祈桌宠.exe --settings` 打开设置；通过桌宠右键菜单退出。
+
+### 安装Codex插件
+
+需要Windows、可用的Node.js和Codex CLI。插件用于在Codex内控制桌宠；便携程序已自带所需运行库，不必为直接运行便携包安装Python或npm依赖。
+
+准备好便携程序后，下载并解压 `codex-pet-plugin-v0.1.14.zip`。在包含 `.agents` 和 `plugins` 的插件解压目录打开PowerShell：
+
+```powershell
+codex plugin marketplace add .
+codex plugin add codex-pet@inori-pet-local
+```
+
+首次手动安装还需从源码包根目录执行以下命令，将插件指向便携程序：
+
+```powershell
+python scripts/configure_plugin.py '你的完整路径\楪祈桌宠.exe'
+```
+
+该配置命令需要Python，只用于这一步手动配置，会备份原启动配置。然后重新加载插件或新开聊天，打开“楪祈桌宠设置”面板。程序已配置时也可在面板中点击“打开宠物”。完整说明见[安装与源码启动](docs/INSTALL.md)。
+
+### 更新已有安装
+
+新版插件：设置面板 → **版本与更新** → **检查更新** → **更新桌宠与插件**。更新器校验下载、迁移设置并保留旧目录；完成后重新加载插件或新开聊天。下载需要网络，插件安装需要可用的Codex CLI。
+
+**旧0.1.14需要先手动升级一次**：旧更新器只比较版本号，不能识别本轮同号修订。0.1.13及以前的插件也需先更新，才能使用新版更新入口。按[同版本手动升级步骤](docs/UPDATE-0.1.14-REVISION.md)操作，退出旧桌宠并保留 `resources/run-data/settings.json`。Windows若提示插件缓存被占用，先保存设置并关闭使用旧插件的Codex，在外部终端更新插件后再打开；不要手工覆盖缓存。
+
+若使用过版本号较高的历史中间包，也需按上述步骤手动迁移一次，之后再使用正常更新流程。
+
+### 更多说明
+
+- 操作、设置、更新与卸载：[使用说明](docs/USAGE.md)。
+- 自制公仔：[制作教程](docs/CUSTOM-PET.md)，或使用[角色制作Skill](plugins/codex-pet/skills/create-codex-pet/SKILL.md)。
 - 开发者：[安装与源码启动](docs/INSTALL.md)。
-- 使用方式：[操作、设置、更新与卸载](docs/USAGE.md)。
-- 自制公仔：[制作教程](docs/CUSTOM-PET.md)，或把 [create-codex-pet Skill](plugins/codex-pet/skills/create-codex-pet/SKILL.md) 交给支持本地文件的 AI。
 - 维护者：[构建与发布](docs/RELEASING.md)。
 
 ## 0.1.14 更新
 
-- 插件面板新增版本提示、更新说明、一键安装和更新进度，无需离开 Codex 查找下载包。
-- 程序和插件统一下载校验、迁移设置；保留已有插件来源，通过正式 CLI 更新插件。
-- 插件断连后主动通知桌宠，减少仅靠进程检测带来的退出延迟；多个连接分别计数。
-- 保留 0.1.13 的分页气泡、聊天 Token、视频动作与跨屏修复。
+- 红白服和战斗服各16个透明视频动作，补齐睡眠与趴边，优化比例、透明边缘和定位。
+- 插件面板支持版本检查、更新进度与设置迁移，并识别同版本修订。
+- 修复Windows插件缓存占用、退出残留和重连期间误关闭的问题。
+- 移除头顶状态圆点，任务信息保留在分页气泡中。
 
 详见[本版发布说明](docs/RELEASE-NOTES.md)。
 

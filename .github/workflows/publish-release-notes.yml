@@ -1,0 +1,31 @@
+name: Sync release notes
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/RELEASE-NOTES.md
+      - .github/workflows/publish-release-notes.yml
+permissions:
+  contents: write
+concurrency:
+  group: release-notes
+  cancel-in-progress: false
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Update existing release body without changing downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(jq -r .version package.json)
+          revision=$(jq -r .revision release-revision.json)
+          marker="<!-- codex-pet-revision:${revision} -->"
+          grep -Fqx "$marker" docs/RELEASE-NOTES.md
+          gh release view "v$version" --json isDraft,body > "$RUNNER_TEMP/release-notes-before.json"
+          jq -e --arg marker "$marker" '.isDraft == false and (.body | contains($marker))' "$RUNNER_TEMP/release-notes-before.json" > /dev/null
+          gh release edit "v$version" --notes-file docs/RELEASE-NOTES.md
