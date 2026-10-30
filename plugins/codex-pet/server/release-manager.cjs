@@ -62,7 +62,7 @@ async function install(){
   if(!dead)throw Error('已有更新正在进行；请在面板查看更新进度');
   fs.renameSync(lock,path.join(dir,'pet-update-stale-'+Date.now()+'.lock'));handle=fs.openSync(lock,'wx');
  }
- try{powershell(['-Mode','probe']);const child=spawn(process.execPath,[__filename,'--worker',dir],{detached:true,windowsHide:true,stdio:'ignore',env:{...process.env,INORI_UPDATE_ROOT:dir}});await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});fs.writeFileSync(handle,String(child.pid));child.unref();return {started:true,message:'正在后台下载并更新，可在此查看进度。'};}catch(e){fs.unlinkSync(lock);throw e;}finally{fs.closeSync(handle);}
+ try{powershell(['-Mode','probe']);process.chdir(dir);const child=spawn(process.execPath,[__filename,'--worker',dir],{cwd:dir,detached:true,windowsHide:true,stdio:'ignore',env:{...process.env,INORI_UPDATE_ROOT:dir}});await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});fs.writeFileSync(handle,String(child.pid));child.unref();return {started:true,message:'正在后台下载并更新，可在此查看进度。'};}catch(e){fs.unlinkSync(lock);throw e;}finally{fs.closeSync(handle);}
 }
 async function worker(dir,deps={}){
  const getLatest=deps.latest||latest,getDownload=deps.download||download,run=deps.powershell||powershell,launch=deps.launch||integration.launchPet;

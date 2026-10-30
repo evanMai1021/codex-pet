@@ -12,6 +12,11 @@ function resolveRuntime(config){
  if(typeof exe!=='string'||!path.isAbsolute(exe)||!fs.existsSync(exe))throw Error('请先配置本机楪祈桌宠程序');
  return {exe};
 }
+function releaseCacheWorkingDirectory({read=readConfig,chdir=dir=>process.chdir(dir)}={}){
+ const config=read(),dir=config.installRoot||(config.inoriExecutable&&path.dirname(config.inoriExecutable));
+ if(!dir||!path.isAbsolute(dir)||!fs.existsSync(dir)||!fs.statSync(dir).isDirectory())return false;
+ chdir(dir);return true;
+}
 function setFollowCodex(enabled){
  if(typeof enabled!=='boolean')throw Error('随 Codex 启动开关必须为布尔值');
  const file=configFile(),before=readConfig(),next={...before,followCodex:enabled,followMode:'plugin'};
@@ -36,4 +41,4 @@ function createPluginStartup({read=readConfig,launch=launchPet}={}){
   await launch(['--codex-autostart']);return {started:true};
  };
 }
-module.exports={configFile,readConfig,resolveRuntime,setFollowCodex,launchPet,createPluginStartup};
+module.exports={configFile,readConfig,resolveRuntime,setFollowCodex,launchPet,createPluginStartup,releaseCacheWorkingDirectory};

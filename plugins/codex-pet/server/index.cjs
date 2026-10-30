@@ -66,6 +66,8 @@ async function handle(m){
  return {jsonrpc:'2.0',id:m.id,error:{code:-32601,message:'Method not found'}};
 }
 if(require.main===module){
+ // Windows cannot rename a cache directory used as a live process working directory.
+ try{integration.releaseCacheWorkingDirectory();}catch{process.stderr.write('Codex Pet: could not release plugin cache working directory.\n');}
  const rl=readline.createInterface({input:process.stdin,crlfDelay:Infinity});
  const close=async()=>{if(closing)return;closing=true;try{if(attaching)await attaching;if(attached)await control.lifecycle({action:'release',pid:process.pid});}catch{}process.exit(0);};
  rl.once('close',close);process.once('SIGTERM',close);process.once('SIGINT',close);

@@ -3,6 +3,14 @@ const fs=require('node:fs'),path=require('node:path');
 const integration=require('../src/inori/integration.cjs');
 const server=require('../plugins/codex-pet/server/index.cjs');
 const base=process.env.INORI_INTEGRATION_TEST_DIR;
+test('plugin releases its cache working directory without changing runtime preferences',()=>{
+ const plugin=require('../plugins/codex-pet/server/integration.cjs'),calls=[];
+ fs.mkdirSync(base,{recursive:true});
+ assert.equal(plugin.releaseCacheWorkingDirectory({read:()=>({installRoot:path.resolve(base)}),chdir:dir=>calls.push(dir)}),true);
+ assert.deepEqual(calls,[path.resolve(base)]);
+ assert.equal(plugin.releaseCacheWorkingDirectory({read:()=>({installRoot:'relative'}),chdir:()=>{throw Error('must not change directory');}}),false);
+ assert.equal(plugin.releaseCacheWorkingDirectory({read:()=>({}),chdir:()=>{throw Error('must not change directory');}}),false);
+});
 test('native plugin settings declare a real open action and a boolean control',async()=>{
  const r=await server.handle({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-11-25'}});
  assert.equal(r.result.serverInfo.version,require('../package.json').version);
