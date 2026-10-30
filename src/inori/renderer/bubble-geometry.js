@@ -4,6 +4,10 @@
  function visibleEnvelope(manifest,pose,animation){
   const boxes=[];
   if(pose){
+   const video=manifest.videos?.['dock-'+(pose==='top'?'bottom':pose)];
+   if(video?.visibleBounds){
+    boxes.push(animation.videoLayout(video,pose).bounds);
+   }
    const dock=manifest.dock,key=pose==='top'&&dock.topDerivedFromBottom?'bottom':pose,sequence=dock.animations?.[key];
    const count=sequence?.frames?.length||1;
    for(let i=0;i<count;i++){

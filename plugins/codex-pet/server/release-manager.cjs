@@ -12,7 +12,21 @@ function releasePlan(release){
   if(!a||!/^sha256:[a-f0-9]{64}$/.test(a.digest||'')||a.size<=0||a.size>800*1024*1024||a.browser_download_url!==`https://github.com/${REPO}/releases/download/v${v}/${name}`)throw Error('正式版附件或校验信息尚未就绪');
   return {name,url:a.browser_download_url,size:a.size,sha256:a.digest.slice(7)};
  });
- return {version:v,assets};
+ const marker=String(release.body||'').match(/<!-- codex-pet-revision:(\d{10}) -->/);
+ const revision=marker?Number(marker[1]):null;
+ const fingerprint=crypto.createHash('sha256').update(JSON.stringify(assets.map(a=>[a.name,a.size,a.sha256]))).digest('hex');
+ return {version:v,revision,fingerprint,assets};
+}
+function readRevision(file,v){try{const r=JSON.parse(fs.readFileSync(file,'utf8'));return r.version===v&&Number.isSafeInteger(r.revision)?r.revision:null;}catch{return null;}}
+function needsUpdate(plan,current){
+ const versions=[current.runtimeVersion,current.pluginVersion];
+ // Never replace a newer component with an older release, including during tag consolidation.
+ if(versions.some(v=>v&&newer(v,plan.version)))return false;
+ if(plan.revision&&[current.runtimeRevision,current.pluginRevision].some((r,i)=>versions[i]===plan.version&&r>plan.revision))return false;
+ if(versions.some(v=>!v||newer(plan.version,v)))return true;
+ if(plan.revision&&[current.runtimeRevision,current.pluginRevision].some(r=>!r||plan.revision>r))return true;
+ const receipt=current.receipt;
+ return !!(receipt&&receipt.version===plan.version&&receipt.revision===plan.revision&&receipt.fingerprint!==plan.fingerprint);
 }
 function allowed(url){const u=new URL(url);return u.protocol==='https:'&&(u.hostname==='github.com'||u.hostname==='api.github.com'||u.hostname==='release-assets.githubusercontent.com'||u.hostname==='objects.githubusercontent.com');}
 function response(url,redirects=0){return new Promise((resolve,reject)=>{
@@ -25,13 +39,13 @@ function response(url,redirects=0){return new Promise((resolve,reject)=>{
 async function latest(){const res=await response(API);const chunks=[];let bytes=0;for await(const chunk of res){bytes+=chunk.length;if(bytes>2*1024*1024){res.destroy();throw Error('版本信息过大');}chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
 function root(){const c=integration.readConfig();if(c.installRoot)return path.resolve(c.installRoot);if(c.inoriExecutable){const folder=path.dirname(c.inoriExecutable);return /^inori-codex-pet-v[\d.]+$/.test(path.basename(folder))?path.dirname(folder):path.join(folder,'versions');}return path.join(process.env.LOCALAPPDATA||os.homedir(),'CodexPet','versions');}
 function stateFile(){return path.join(root(),'pet-update-state.json');}
-function local(){const c=integration.readConfig();let runtimeVersion=null;try{runtimeVersion=JSON.parse(fs.readFileSync(path.join(path.dirname(c.inoriExecutable),'resources/app/package.json'),'utf8')).version;}catch{}return {pluginVersion:require('../plugin.json').version,runtimeVersion};}
+function local(){const c=integration.readConfig();let runtimeVersion=null,runtimeRevision=null;try{const app=path.join(path.dirname(c.inoriExecutable),'resources/app');runtimeVersion=JSON.parse(fs.readFileSync(path.join(app,'package.json'),'utf8')).version;runtimeRevision=readRevision(path.join(app,'release-revision.json'),runtimeVersion);}catch{}const pluginVersion=require('../plugin.json').version;return {pluginVersion,runtimeVersion,runtimeRevision,pluginRevision:readRevision(path.join(__dirname,'../release-revision.json'),pluginVersion),receipt:c.releaseReceipt||null};}
 let cached=null,checkedAt=0;
 function status(){let state=null;try{state=JSON.parse(fs.readFileSync(stateFile(),'utf8'));}catch{}return {...local(),...(cached||{}),state};}
 async function check(force=false){
  let state=null;try{state=JSON.parse(fs.readFileSync(stateFile(),'utf8'));}catch{}
- if(!cached||force||Date.now()-checkedAt>3600000){const r=await latest();const v=String(r.tag_name||'').replace(/^v/,'');version(v);cached={latestVersion:v,notes:String(r.body||'').slice(0,12000)};checkedAt=Date.now();try{releasePlan(r);cached.ready=true;}catch{cached.ready=false;}}
- const current=local();return {...current,...cached,updateAvailable:!current.runtimeVersion||newer(cached.latestVersion,current.runtimeVersion)||newer(cached.latestVersion,current.pluginVersion),state};
+ if(!cached||force||Date.now()-checkedAt>3600000){const r=await latest();const v=String(r.tag_name||'').replace(/^v/,'');version(v);cached={latestVersion:v,notes:String(r.body||'').slice(0,12000)};checkedAt=Date.now();try{cached.plan=releasePlan(r);cached.ready=true;}catch{cached.ready=false;}}
+ const current=local(),plan=cached.plan||{version:cached.latestVersion};return {...current,...cached,latestRevision:plan.revision||null,updateAvailable:needsUpdate(plan,current),state};
 }
 async function download(asset,file,onProgress,fetchResponse=response){
  const res=await fetchResponse(asset.url),hash=crypto.createHash('sha256');let size=0;
@@ -56,7 +70,7 @@ async function worker(dir,deps={}){
  const write=(patch={})=>fs.writeFileSync(file,JSON.stringify({stage,updatedAt:Date.now(),...patch}));
  let oldConfig=null,switched=false,oldStopped=false;
  try{
-  write();const plan=releasePlan(await getLatest()),current=local();if(current.runtimeVersion&&!newer(plan.version,current.runtimeVersion)&&!newer(plan.version,current.pluginVersion)){stage='complete';write({version:plan.version,message:'已是最新版本'});return;}
+  write();const plan=releasePlan(await getLatest()),current=local();if(!needsUpdate(plan,current)){stage='complete';write({version:plan.version,message:'当前组件无需更新（不会降级）'});return;}
   const work=path.join(dir,'pet-update-'+plan.version+'-'+Date.now());fs.mkdirSync(work);
   for(const asset of plan.assets){stage='downloading';write({version:plan.version,asset:asset.name});await getDownload(asset,path.join(work,asset.name),(received,total)=>{if(Date.now()-lastWrite>700){lastWrite=Date.now();write({version:plan.version,asset:asset.name,received,total});}});}
   stage='extracting';write({version:plan.version});
@@ -64,6 +78,7 @@ async function worker(dir,deps={}){
   const appFolder=path.join(work,'app','inori-codex-pet-v'+plan.version),exe=path.join(appFolder,'楪祈桌宠.exe'),pluginRoot=path.join(work,'plugin');
   const manifest=JSON.parse(fs.readFileSync(path.join(pluginRoot,'plugins/codex-pet/plugin.json'),'utf8'));
   if(!fs.existsSync(exe)||manifest.version!==plan.version||JSON.parse(fs.readFileSync(path.join(appFolder,'resources/app/package.json'),'utf8')).version!==plan.version)throw Error('程序与插件版本不一致');
+  if(plan.revision&&(readRevision(path.join(appFolder,'resources/app/release-revision.json'),plan.version)!==plan.revision||readRevision(path.join(pluginRoot,'plugins/codex-pet/release-revision.json'),plan.version)!==plan.revision))throw Error('程序与插件修订不一致');
   oldConfig=integration.readConfig();
   // Keep settings inside the same installation root; never touch account credentials.
   const previous=oldConfig.inoriExecutable,previousData=previous&&path.join(path.dirname(previous),'resources/run-data');
@@ -83,11 +98,11 @@ async function worker(dir,deps={}){
   }
   const settings=previousData&&path.join(previousData,'settings.json');if(settings&&fs.existsSync(settings)){fs.mkdirSync(path.join(appFolder,'resources/run-data'),{recursive:true});fs.copyFileSync(settings,path.join(appFolder,'resources/run-data/settings.json'));}
   const config=integration.configFile();if(fs.existsSync(config))fs.copyFileSync(config,path.join(work,'runtime-before.json'));fs.mkdirSync(path.dirname(config),{recursive:true});
-  fs.writeFileSync(config,JSON.stringify({...oldConfig,inoriExecutable:exe,installRoot:dir},null,2));switched=true;
+  fs.writeFileSync(config,JSON.stringify({...oldConfig,inoriExecutable:exe,installRoot:dir,releaseReceipt:{version:plan.version,revision:plan.revision,fingerprint:plan.fingerprint}},null,2));switched=true;
   run(['-Mode','plugin','-Source',pluginRoot]);
   await launch();stage='complete';write({version:plan.version,message:'桌宠及插件已更新；重新加载插件后使用新版面板。'});
  }catch(e){if(switched&&oldConfig)fs.writeFileSync(integration.configFile(),JSON.stringify(oldConfig,null,2));if(oldStopped&&oldConfig?.inoriExecutable)try{await launch();}catch{}stage='error';write({message:e.message});if(require.main===module)process.exitCode=1;}
  finally{try{fs.unlinkSync(lock);}catch{}}
 }
 if(require.main===module&&process.argv[2]==='--worker')worker(path.resolve(process.argv[3]));
-module.exports={check,status,install,releasePlan,newer,download,worker};
+module.exports={check,status,install,releasePlan,newer,needsUpdate,download,worker};

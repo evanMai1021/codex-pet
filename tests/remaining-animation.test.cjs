@@ -18,9 +18,15 @@ for(const skin of ['redwhite','battle']){
  test(skin+' sleep entry plays once then breathing loops without standing again',()=>{
   assert.equal(anim.sampleAsset(manifest,'idle',0,300000).clip,'continuousSleepEnter');
   assert.equal(anim.sampleAsset(manifest,'idle',0,301279).frame,7);
-  assert.equal(anim.sampleAsset(manifest,'idle',0,301280).clip,'continuousSleepLoop');
-  assert.equal(anim.sampleAsset(manifest,'idle',0,301530).frame,1);
-  assert.equal(anim.sampleAsset(manifest,'idle',0,303280).frame,0);
+  const duration=manifest.videos?.sleepEnter?.durationMs||1280;
+  assert.equal(anim.sampleAsset(manifest,'idle',0,300000+duration-1).clip,'continuousSleepEnter');
+  assert.equal(anim.sampleAsset(manifest,'idle',0,300000+duration).clip,'continuousSleepLoop');
+  assert.equal(anim.sampleAsset(manifest,'idle',0,300250+duration).frame,1);
+  assert.equal(anim.sampleAsset(manifest,'idle',0,302000+duration).frame,0);
+  if(manifest.videos?.sleepEnter){
+   assert.equal(anim.sampleAsset(manifest,'idle',0,300000+duration-1).videoPhase,'sleepEnter');
+   assert.equal(anim.sampleAsset(manifest,'idle',0,300000+duration).videoPhase,'sleep');
+  }
   assert.equal(anim.sampleAsset(manifest,'idle',0,300000,true).clip,'continuousSleepLoop');
  });
  test(skin+' new peace and unknown preserve interaction and status semantics',()=>{

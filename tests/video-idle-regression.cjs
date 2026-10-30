@@ -22,9 +22,9 @@ app.whenReady().then(async()=>{
  await wait(4100);record('video-loops-without-stalling',await js('window.videoLoops>=1&&!videoAnimation.video.paused'));
  await pet.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});await wait(80);fs.writeFileSync(path.join(out,'actual-idle-video.png'),(await pet.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());
  await js('data.lastInteraction=Date.now()-121000;idleSince=Date.now()-121000;paint()');await wait(250);record('doze-is-preserved',await js("scene.dataset.idlePhase==='doze'&&!!videoAnimation.video&&videoAnimation.key.includes('doze-seedance')"));
- await js('data.lastInteraction=Date.now()-301000;idleSince=Date.now()-301000;paint()');record('sleep-is-preserved',await js("scene.dataset.idlePhase==='sleep'&&!videoAnimation.video"));
+ await js('data.lastInteraction=Date.now()-301000;idleSince=Date.now()-301000;paint()');await wait(250);record('sleep-is-preserved',await js("scene.dataset.idlePhase==='sleep'&&!!videoAnimation.video&&videoAnimation.key.includes('sleep-enter-seedance')"));
  api.getPanel().apply({reduced:true});record('reduced-motion-stops-video',await js('!videoAnimation.video'));
- api.getPanel().apply({reduced:false,dock:'right'});await wait(300);record('dock-pose-is-preserved',await js("scene.dataset.animation==='dock-right'&&!videoAnimation.video"));
- api.getPanel().apply({dock:null,skin:'battle'});await wait(500);record('other-outfit-still-uses-own-assets',await js("activeSkin==='battle'&&!videoAnimation.video"));
+ api.getPanel().apply({reduced:false,dock:'right'});await wait(300);record('dock-pose-is-preserved',await js("scene.dataset.animation==='dock-right'&&!!videoAnimation.video&&videoAnimation.key.includes('dock-right-seedance')"));
+ api.getPanel().apply({dock:null,skin:'battle'});await wait(500);record('other-outfit-still-uses-own-assets',await js("activeSkin==='battle'&&!!videoAnimation.video"));
  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:checks.every(c=>c.pass),mode:'actual packaged Electron decoder and renderer; real Seedance Mini video, synthetic idle status',checks},null,2));app.exit(checks.every(c=>c.pass)?0:1);
 }).catch(e=>{fs.writeFileSync(path.join(out,'error.txt'),e.stack);fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:false,checks,error:e.message},null,2));app.exit(2);});setTimeout(()=>app.exit(3),30000);

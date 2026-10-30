@@ -22,6 +22,20 @@ README 中默认素材的用途与代码许可分别说明。GitHub 公开仓库
 
 工作流复用 v0.1.10 已公开发布包内的独立 Python 运行库，下载后校验固定 SHA256，只提取 runtime/python，不包含用户数据。需要升级该运行库时，应另行核对来源、校验值和兼容性。官方 Actions 固定到提交，发布使用 GitHub 的临时工作流令牌，不需要维护者填写个人令牌。
 
-0.1.14 的当前窗口验收脚本为 paged-bubble、video-batch、corner-badge、monitor-seam、bubble-scale 和 pet-size-drift regression。保留的旧独立详情页回归用于历史参考，不作为分页气泡的验收入口。检查素材时使用 `python scripts/validate_builtin_assets.py`，同时验证 JSON/JS 一致性和视频引用。
+0.1.14 的当前窗口验收脚本为 paged-bubble、video-batch、video-sleep-dock、video-battle-batch、video-final-014、embedded-settings、corner-badge、monitor-seam、bubble-scale 和 pet-size-drift regression。保留的旧独立详情页回归用于历史参考，不作为分页气泡的验收入口。检查素材时使用 `python scripts/validate_builtin_assets.py`，同时验证 JSON/JS 一致性和视频引用。
 
 本轮插件更新和退出修复统一为0.1.14，上一正式版为0.1.13。合并发布会重新生成对应附件和校验值；不改写 main 分支历史。整理清单只匹配指定旧标签的提交，避免影响将来使用相同版本号的新发布。
+
+## 当前版与下一版的划分
+
+视频图源替换、播放适配与相关比例定位修正继续并入0.1.14。下一版本暂定0.1.15，仅处于范围准备阶段，见[NEXT-0.1.15.md](NEXT-0.1.15.md)。当前package、插件、界面、构建版本保持0.1.14；尚未适配或发布的素材不能列为已完成。
+
+2026-10-30本地补充验收：两套服装各16段视频。源码与运行包最终素材窗口回归各63项通过；战斗服批次77项、分页气泡22项、内嵌设置27项、Node 147项及Python 14项通过。当前GitHub附件尚未包含这次补充。本轮新增修订与附件摘要比较；旧0.1.14须先手动升级新插件，不能声称旧更新器会自动获得同号更新。详见[同版本更新说明](UPDATE-0.1.14-REVISION.md)。
+
+## 同版本修订的本地发布准备
+
+修订2026103001，版本仍为0.1.14。先用 `scripts/prepare_release_downloads.py` 从已审查工作树创建源码快照和插件ZIP，保留 source-inventory.json 供核对；它包含尚未提交的本轮素材，不能用旧 HEAD 的 git archive 代替。再从工作区的 `work/build_release.py --version 0.1.14 --public-project <source-tree完整路径> --python-runtime <独立运行库> --out-dir <独立暂存目录> --no-activate` 构建便携包；正在使用的 outputs/inori-codex-pet-v0.1.14 不覆盖。最后为三个ZIP生成SHA256清单并验收解压产物。
+
+正式发布须另获明确要求。提交前逐文件核对快照和源码；不改写main历史。当前 workflow_dispatch 会检出旧版本标签，直接运行可能重新发布旧内容；须先核对标签指向与发布方案。标签是否调整单独决定，不能把 Release target_commitish 当成实际标签提交。当前源码ZIP是未提交快照，正式发布前应与最终提交逐文件核对；工作流重新打包会产生另一组ZIP摘要，不能沿用本地SHA256清单。
+
+2026-10-30本轮发布使用已审查提交，main正常追加提交，v0.1.14标签通过指定旧提交的租约更新后触发Windows构建。线上附件重新构建后必须按新SHA256重新下载验收，不混用准备阶段的ZIP摘要。

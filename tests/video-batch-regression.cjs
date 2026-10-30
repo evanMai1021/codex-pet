@@ -42,13 +42,14 @@ app.whenReady().then(async()=>{
  await js('idleSince=Date.now()-65000;data.lastInteraction=idleSince;paint();true');record('stretch-returns-to-idle',await ready('idle'));
  await js('idleSince=Date.now()-121000;data.lastInteraction=idleSince;paint();true');record('doze-uses-video',await ready('doze')&&await js('videoAnimation.video.loop'));
  fs.writeFileSync(path.join(out,'doze.png'),(await pet.webContents.capturePage()).toPNG());
- await js('idleSince=Date.now()-301000;data.lastInteraction=idleSince;paint();true');record('missing-sleep-video-keeps-atlas',await js("scene.dataset.idlePhase==='sleep'&&!videoAnimation.video"));
+ await js('idleSince=Date.now()-301000;data.lastInteraction=idleSince;paint();true');record('sleep-entry-uses-video',await ready('sleep-enter'));
  await status('working');await ready('working');
  api.getPanel().apply({reduced:true});await wait(100);record('reduced-motion-stops-videos',await js("!videoAnimation.video&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));api.getPanel().apply({reduced:false});await ready('working');
- for(const dock of ['left','right','top','bottom']){api.getPanel().apply({dock});await wait(120);record('dock-remains-correct-'+dock,await js(`!videoAnimation.video&&scene.dataset.animation==='dock-${dock}'`));}
+ await status('idle');
+ for(const dock of ['left','right','top','bottom']){api.getPanel().apply({dock});const key='dock-'+(dock==='top'?'bottom':dock);record('dock-remains-correct-'+dock,await ready(key)&&await js(`scene.dataset.animation==='dock-${dock}'`));}
  api.getPanel().apply({dock:null});await status('completed','dock-completion');await ready('completed');api.getPanel().apply({dock:'right'});await js('frameStart=Date.now()-2500;paint();true');
  record('docked-completion-not-cut-at-two-seconds',await js("scene.classList.contains('peek')&&!!videoAnimation.video&&videoAnimation.key.includes('completed-seedance')"));
- api.getPanel().apply({dock:null,skin:'battle'});await wait(650);record('battle-fallback-retained',await js("activeSkin==='battle'&&!videoAnimation.video"));
+ api.getPanel().apply({dock:null,skin:'battle'});await wait(650);record('battle-completed-video-retained',await js("activeSkin==='battle'&&!!videoAnimation.video&&videoAnimation.key.includes('completed-seedance')"));
  api.getPanel().apply({skin:'redwhite'});await status('waiting');await ready('waiting');await js('videoAnimation.video.dispatchEvent(new Event("error"));paint();true');
  record('bad-video-uses-own-atlas',await js("!videoAnimation.video&&videoAnimation.failed.size===1&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));
  record('native-window-size-stable',Math.abs(pet.getBounds().width-original.width)<=8&&Math.abs(pet.getBounds().height-original.height)<=8);

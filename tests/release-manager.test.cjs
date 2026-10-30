@@ -13,6 +13,21 @@ test('downloads reject truncated or tampered bytes before any switch',async()=>{
  await assert.rejects(updates.download(asset,path.join(dir,'bad'),()=>{},async()=>Readable.from([Buffer.from('tampered')])));
  await assert.rejects(updates.download(asset,path.join(dir,'short'),()=>{},async()=>Readable.from([Buffer.from('x')])));
 });
+test('same-version revisions and attachment receipts detect repairs without downgrading',()=>{
+ const r=release();r.tag_name='v0.1.14';r.body='<!-- codex-pet-revision:2026103001 -->';r.assets=r.assets.map(a=>({...a,name:a.name.replaceAll('0.1.99','0.1.14'),browser_download_url:a.browser_download_url.replaceAll('0.1.99','0.1.14')}));
+ const plan=updates.releasePlan(r),current={runtimeVersion:'0.1.14',pluginVersion:'0.1.14',runtimeRevision:2026103001,pluginRevision:2026103001};
+ assert.equal(updates.needsUpdate(plan,{...current,runtimeRevision:null}),true);
+ assert.equal(updates.needsUpdate(plan,{...current,pluginRevision:null}),true);
+ assert.equal(updates.needsUpdate(plan,current),false);
+ assert.equal(updates.needsUpdate(plan,{...current,receipt:{version:plan.version,revision:plan.revision,fingerprint:plan.fingerprint}}),false);
+ assert.equal(updates.needsUpdate(plan,{...current,receipt:{version:plan.version,revision:plan.revision,fingerprint:'old'}}),true);
+ assert.equal(updates.needsUpdate(plan,{...current,pluginVersion:'0.1.15'}),false);
+ assert.equal(updates.needsUpdate(plan,{...current,runtimeRevision:2026103002,pluginRevision:null}),false);
+ assert.equal(updates.needsUpdate(plan,{...current,runtimeVersion:'0.1.13',pluginRevision:2026103002}),false);
+ const legacy=updates.releasePlan({...r,body:''});assert.equal(updates.needsUpdate(legacy,current),false);
+ assert.equal(updates.needsUpdate(plan,{...current,runtimeVersion:null}),true);
+ const reversed=updates.releasePlan({...r,assets:[...r.assets].reverse()});assert.equal(reversed.fingerprint,plan.fingerprint);
+});
 test('worker migrates settings, switches both components, and restores runtime config on plugin failure',async()=>{
  const homeBefore=process.env.CODEX_PET_HOME;const root=path.join(process.env.INORI_INTEGRATION_TEST_DIR,'worker-'+Date.now());fs.mkdirSync(root,{recursive:true});process.env.CODEX_PET_HOME=path.join(root,'home');fs.mkdirSync(process.env.CODEX_PET_HOME);
  const config=path.join(process.env.CODEX_PET_HOME,'runtime.json'),old=path.join(root,'old','楪祈桌宠.exe'),settings=path.join(path.dirname(old),'resources/run-data/settings.json');fs.mkdirSync(path.dirname(settings),{recursive:true});fs.writeFileSync(settings,JSON.stringify({size:.8,skin:'battle'}));fs.writeFileSync(old,'old');const original={inoriExecutable:old,followCodex:true,other:'preserved'};

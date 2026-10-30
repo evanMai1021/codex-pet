@@ -97,16 +97,18 @@ function paint(){if(!skinReady)return;
  scene.dataset.animation=pose?'dock-'+pose:sample.clip;scene.dataset.idlePhase=state==='idle'?(sample.phase||'awake'):'awake';
  const frame=skin.clips[sample.clip].frames[sample.frame];
  const phase=state==='idle'&&sample.phase&&sample.phase!=='awake'?sample.phase:null;
- const videoKey=reacting?activeClick:phase||state;
+ const videoKey=pose?'dock-'+(pose==='top'?'bottom':pose):reacting?activeClick:sample.videoPhase||phase||state;
  const videoEpoch=reacting?clickStartedAt:phase?idleSince:frameStart;
- const videoFrame=videoAnimation.frame(activeSkin,skin,videoKey,skinCatalog[activeSkin].base,!pose&&!data.reduced,videoEpoch);
+ const videoFrame=videoAnimation.frame(activeSkin,skin,videoKey,skinCatalog[activeSkin].base,!data.reduced,videoEpoch);
  // Display the decoded video directly so high-DPI/large pets do not upscale a 192px bitmap.
  if(videoFrame&&videoFrame.video.parentElement!==avatar){videoFrame.video.className='continuous-video';avatar.appendChild(videoFrame.video);}
+ const videoPlacement=videoFrame?anim.videoLayout(skin.videos[videoKey],pose):null;
+ if(videoFrame){videoFrame.video.style.transformOrigin='0 0';videoFrame.video.style.transform=`matrix(${videoPlacement.matrix.join(',')})`;}
  $('sprite').style.opacity=videoFrame?'0':'';
  const dockFrame=pose?anim.dockLayout(skin.dock,pose,elapsed,!!data.reduced):null;
- const key=videoFrame?videoFrame.key:JSON.stringify([activeSkin,pose,pose?dockFrame:[frame.source,frame.box,frame.draw,frame.image||sample.clip],sample.lift||0,sample.electric||0,!!sample.question]);
+ const key=videoFrame?videoFrame.key+':'+pose:JSON.stringify([activeSkin,pose,pose?dockFrame:[frame.source,frame.box,frame.draw,frame.image||sample.clip],sample.lift||0,sample.electric||0,!!sample.question]);
  if(key===lastPaintKey){reportRegions();return;}lastPaintKey=key;paintCount++;ctx.clearRect(0,0,192,208);
- if(videoFrame){const v=videoFrame.video,scale=Math.min(192/v.videoWidth,208/v.videoHeight),w=v.videoWidth*scale,h=v.videoHeight*scale;ctx.drawImage(v,(192-w)/2,208-h,w,h);}
+ if(videoFrame){const v=videoFrame.video,scale=Math.min(192/v.videoWidth,208/v.videoHeight),w=v.videoWidth*scale,h=v.videoHeight*scale;ctx.save();ctx.setTransform(...videoPlacement.matrix);ctx.drawImage(v,(192-w)/2,208-h,w,h);ctx.restore();}
  else if(pose){const p=dockFrame,[sx,sy]=p.source,[bx,by,br,bb]=p.box;ctx.save();if(p.rotate)ctx.setTransform(-1,0,0,-1,192,208);ctx.drawImage(skinImages[p.imageKey],sx+bx,sy+by,br-bx,bb-by,p.x+bx*p.scale,p.y+by*p.scale,(br-bx)*p.scale,(bb-by)*p.scale);ctx.restore();}
  else{const f=skin.clips[sample.clip].frames[sample.frame],[sx,sy,w,h]=f.source,[bx,by,br,bb]=f.box,[dx,dy,dw,dh]=f.draw,rx=dw/w,ry=dh/h;
   if(sample.electric){ctx.save();ctx.globalAlpha=sample.electric;ctx.strokeStyle='#c4efff';ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<48;i++){const a=-Math.PI/2+i*Math.PI/24,k=i%2?.91:1.08,x=96+74*k*Math.cos(a),y=108+86*k*Math.sin(a);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();ctx.restore();}

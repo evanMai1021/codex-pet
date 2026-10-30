@@ -43,11 +43,26 @@ function sampleAsset(manifest,state,elapsed,idleMs=0,reduced=false){
  if(state==='idle'&&original.phase!=='awake'){
   const phase=original.phase,phases=manifest.idlePhases||{};
   let clip=phases[phase],time=phase==='stretch'?idleMs-60000:phase==='doze'?idleMs-120000:idleMs-300000;
-  if(phase==='sleep'&&phases.sleepEnter){const entry=manifest.clips[phases.sleepEnter],duration=entry.frames.length*entry.frameMs;if(!reduced&&time<duration)clip=phases.sleepEnter;else time=Math.max(0,time-duration);}
-  const timed=clip&&timedClip(manifest,clip,time,reduced);return timed?{...timed,phase}:original;
+  let videoPhase=phase;
+  if(phase==='sleep'&&phases.sleepEnter){
+   const entry=manifest.clips[phases.sleepEnter],videoDuration=manifest.videos?.sleepEnter?.durationMs;
+   const duration=Number.isFinite(videoDuration)&&videoDuration>0?videoDuration:entry.frames.length*entry.frameMs;
+   if(!reduced&&time<duration){clip=phases.sleepEnter;videoPhase='sleepEnter';}else time=Math.max(0,time-duration);
+  }
+  const timed=clip&&timedClip(manifest,clip,time,reduced);return timed?{...timed,phase,videoPhase}:original;
  }
  const clip=manifest.stateMap?.[state],timed=clip&&timedClip(manifest,clip,elapsed,reduced);
  return timed?{...timed,...(state==='unknown'?{question:true}:{})}:original;
 }
-root.InoriAnimation={sample,interaction,duration,dockLayout,COMPLETION_RATE,timedClip,sampleAsset};
+function videoLayout(entry,pose=null){
+ const p=entry?.presentation,scale=Number.isFinite(p?.scale)&&p.scale>0?p.scale:1;
+ const x=Number.isFinite(p?.x)?p.x:0,y=Number.isFinite(p?.y)?p.y:0;
+ const rotate=pose==='top',matrix=rotate?[-scale,0,0,-scale,192-x,208-y]:[scale,0,0,scale,x,y];
+ const [bx,by,bw,bh]=entry?.visibleBounds||[0,0,192,208];
+ let left=x+bx*scale,top=y+by*scale,right=left+bw*scale,bottom=top+bh*scale;
+ if(rotate){[left,right]=[192-right,192-left];[top,bottom]=[208-bottom,208-top];}
+ left=Math.max(0,left);top=Math.max(0,top);right=Math.min(192,right);bottom=Math.min(208,bottom);
+ return{matrix,bounds:{x:left,y:top,width:Math.max(0,right-left),height:Math.max(0,bottom-top)}};
+}
+root.InoriAnimation={sample,interaction,duration,dockLayout,COMPLETION_RATE,timedClip,sampleAsset,videoLayout};
 })(globalThis);

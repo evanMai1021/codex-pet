@@ -15,6 +15,9 @@ shutil.copytree(electron,out,dirs_exist_ok=True,ignore=shutil.ignore_patterns('e
 shutil.copy2(electron/'electron.exe',out/'楪祈桌宠.exe');app=out/'resources/app';app.mkdir(parents=True,exist_ok=True)
 shutil.copytree(r/'src',app/'src',ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
 (app/'package.json').write_text(json.dumps({'name':'inori-codex-pet','version':version,'main':'src/inori/main.cjs','private':True}),encoding='utf-8')
+revision=json.loads((r/'release-revision.json').read_text(encoding='utf-8'))
+if revision['version']!=version or not isinstance(revision['revision'],int):raise ValueError('Invalid release revision')
+shutil.copy2(r/'release-revision.json',app/'release-revision.json')
 py=app/'runtime/python';py.mkdir(parents=True)
 for f in runtime.iterdir():
     if f.is_file() and (f.name in ['python.exe','pythonw.exe','LICENSE.txt'] or f.suffix.lower() in ['.dll','.zip','._pth']):shutil.copy2(f,py/f.name)

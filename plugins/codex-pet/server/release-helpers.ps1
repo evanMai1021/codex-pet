@@ -1,6 +1,10 @@
 param([ValidateSet('probe','extract','plugin','stop')][string]$Mode,[string]$Archive,[string]$Destination,[string]$Source,[string]$Executable,[int]$PetPid)
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
+function FileSha256([string]$File){
+ $stream=[IO.File]::OpenRead($File);$hash=[Security.Cryptography.SHA256]::Create()
+ try{return [BitConverter]::ToString($hash.ComputeHash($stream))}finally{$hash.Dispose();$stream.Dispose()}
+}
 if($Mode -eq 'stop'){
  $process=Get-CimInstance Win32_Process -Filter "ProcessId = $PetPid"
  if(!$process){exit 0}
@@ -20,7 +24,6 @@ if($Mode -eq 'probe' -or $Mode -eq 'plugin'){
   $installedText=& $command.Source plugin list --marketplace inori-pet-local --json
   if($LASTEXITCODE){exit $LASTEXITCODE}
   $installed=($installedText | ConvertFrom-Json).installed | Where-Object {$_.pluginId -eq 'codex-pet@inori-pet-local'}
-  if($installed.version -eq $wanted.version){Write-Output 'Matching plugin version is already installed';exit 0}
   $existingRoot=[IO.Path]::GetFullPath($registered.root)
   $manifestPath=Join-Path $existingRoot '.agents/plugins/marketplace.json'
   $entry=((Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json).plugins | Where-Object {$_.name -eq 'codex-pet'})
@@ -53,9 +56,20 @@ if($Mode -eq 'probe' -or $Mode -eq 'plugin'){
   & $command.Source plugin marketplace add $Source
   if($LASTEXITCODE){exit $LASTEXITCODE}
  }
- & $command.Source plugin add codex-pet@inori-pet-local --json
- if($LASTEXITCODE){foreach($item in $restoreFiles){Copy-Item -LiteralPath $item.source -Destination $item.target}}
- exit $LASTEXITCODE
+ $resultText=& $command.Source plugin add codex-pet@inori-pet-local --json
+ $installExit=$LASTEXITCODE
+ if($installExit){foreach($item in $restoreFiles){Copy-Item -LiteralPath $item.source -Destination $item.target};exit $installExit}
+ # A matching version alone is insufficient: verify the CLI-refreshed installed copy.
+ $result=$resultText | ConvertFrom-Json
+ if(!$result.installedPath){throw 'Plugin install returned no installed path'}
+ $incoming=[IO.Path]::GetFullPath((Join-Path $Source 'plugins/codex-pet'))
+ foreach($file in Get-ChildItem -LiteralPath $incoming -File -Recurse){
+  $relative=$file.FullName.Substring($incoming.Length+1)
+  $target=Join-Path $result.installedPath $relative
+  if(!(Test-Path -LiteralPath $target) -or (FileSha256 $target) -ne (FileSha256 $file.FullName)){throw 'Installed plugin content does not match release; refresh its marketplace and retry'}
+ }
+ Write-Output 'Plugin installed and content verified'
+ exit 0
 }
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $target=[IO.Path]::GetFullPath($Destination)

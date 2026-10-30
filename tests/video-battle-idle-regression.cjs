@@ -1,0 +1,25 @@
+'use strict';
+const {app}=require('electron'),fs=require('node:fs'),path=require('node:path'),Module=require('node:module');
+const out=process.env.INORI_TEST_OUT;if(!out||!process.env.INORI_DATA_DIR)throw Error('Isolated paths required');fs.mkdirSync(out,{recursive:true});process.argv.push('--no-bridge','--control-only');
+const main=process.env.INORI_TEST_MAIN||path.resolve(__dirname,'../src/inori/main.cjs'),m=new Module(main,module);m.filename=main;m.paths=Module._nodeModulePaths(path.dirname(main));m._compile(fs.readFileSync(main,'utf8')+'\nmodule.exports={getWindow:()=>win,getPanel:()=>settingsPanel,getSnapshot:()=>snapshot,send};',main);
+const wait=ms=>new Promise(r=>setTimeout(r,ms)),checks=[],record=(name,pass,data={})=>checks.push({name,pass,...data});
+app.whenReady().then(async()=>{
+ const api=m.exports;for(let i=0;i<100&&!api.getPanel();i++)await wait(80);const pet=api.getWindow(),js=s=>pet.webContents.executeJavaScript(s);pet.showInactive();
+ const ready=async skin=>{for(let i=0;i<100;i++){await wait(50);if(await js(`activeSkin===${JSON.stringify(skin)}&&!!videoAnimation.video&&videoAnimation.video.readyState>=2`))return true;}return false;};
+ api.getPanel().apply({skin:'battle',dock:null,size:1,reduced:false});api.getSnapshot().status={state:'idle',threads:[]};api.getSnapshot().lastInteraction=Date.now();api.send();
+ if(!await ready('battle'))throw Error('Battle video unavailable');
+ record('battle-correct-source',await js("videoAnimation.video.currentSrc.endsWith('/battle/videos/idle-seedance-mini-v1.webm')"));
+ record('one-high-resolution-video',await js("document.querySelectorAll('video').length===1&&videoAnimation.video.videoWidth===576&&videoAnimation.video.parentElement===avatar"));
+ const before=await js('videoAnimation.video.currentTime');await wait(300);record('video-advances',await js('videoAnimation.video.currentTime')>before);
+ const pixels=await js("(()=>{const a=ctx.getImageData(0,0,192,208).data;let opaque=0,clear=0,green=0;for(let i=0;i<a.length;i+=4){if(a[i+3]>240)opaque++;if(a[i+3]<10)clear++;if(a[i+3]>100&&a[i+1]>a[i]+40&&a[i+1]>a[i+2]+40)green++;}return{opaque,clear,green}})()");record('transparent-background',pixels.clear>4000&&pixels.opaque>8000,{pixels});record('no-green-spill',pixels.green<30);
+ fs.writeFileSync(path.join(out,'battle-idle.png'),(await pet.webContents.capturePage()).toPNG());
+ await js('videoAnimation.video.currentTime=videoAnimation.video.duration-.2;true');let ending;for(let i=0;i<30;i++){await wait(100);ending=await js('({loop:videoAnimation.video.loop,paused:videoAnimation.video.paused,seeking:videoAnimation.video.seeking,time:videoAnimation.video.currentTime,duration:videoAnimation.video.duration})');if(!ending.seeking&&ending.time<1)break;}record('loop-plays-through-end',ending.loop&&!ending.paused&&!ending.seeking&&ending.time<1,{ending});
+ const bounds=pet.getBounds();for(const size of [.8,1,1.2]){api.getPanel().apply({size});await wait(120);record('size-'+size,await js(`Math.abs(avatar.getBoundingClientRect().width-192*${size})<2`));}api.getPanel().apply({size:1});
+ api.getPanel().apply({reduced:true});await wait(100);record('reduced-falls-back',await js("!videoAnimation.video&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));api.getPanel().apply({reduced:false});record('reenable-restores-video',await ready('battle'));
+ for(const dock of ['left','right','top','bottom']){api.getPanel().apply({dock});await wait(150);record('battle-dock-video-'+dock,await ready('battle')&&await js(`!!videoAnimation.video&&scene.dataset.animation==='dock-${dock}'`));}api.getPanel().apply({dock:null});await ready('battle');
+ api.getSnapshot().status={state:'working',threads:[]};api.send();await wait(150);record('battle-working-video',await ready('battle')&&await js("!!videoAnimation.video&&scene.dataset.state==='working'&&videoAnimation.key.includes('working-seedance')"));api.getSnapshot().status={state:'idle',threads:[]};api.send();await ready('battle');
+ api.getPanel().apply({skin:'redwhite'});record('redwhite-idle-retained',await ready('redwhite'));api.getPanel().apply({skin:'battle'});record('battle-switch-back',await ready('battle'));
+ await js('videoAnimation.video.dispatchEvent(new Event("error"));paint();true');record('decode-error-uses-battle-atlas',await js("activeSkin==='battle'&&!videoAnimation.video&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));
+ record('native-size-stable',Math.abs(pet.getBounds().width-bounds.width)<=2&&Math.abs(pet.getBounds().height-bounds.height)<=2);
+ fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:checks.every(c=>c.pass),checks},null,2));app.exit(checks.every(c=>c.pass)?0:1);
+}).catch(e=>{fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:false,checks,error:e.stack},null,2));app.exit(2);});setTimeout(()=>app.exit(3),25000);

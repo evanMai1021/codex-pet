@@ -11382,7 +11382,17 @@
     "idle": {
       "file": "videos/idle-seedance-mini-detail-v2.webm",
       "loop": true,
-      "frameMs": 41.666666666666664
+      "frameMs": 41.666666666666664,
+      "eyeAnchors": [
+        [
+          76.08199963919385,
+          93.94759935054894
+        ],
+        [
+          116.08819700663832,
+          92.84141368373356
+        ]
+      ]
     },
     "working": {
       "file": "videos/working-seedance-mini-v1.webm",
@@ -11442,6 +11452,85 @@
       "loop": true,
       "frameMs": 41.666666666666664,
       "durationMs": 3791.6666666666665
+    },
+    "sleepEnter": {
+      "file": "videos/sleep-enter-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4041.666666666667
+    },
+    "sleep": {
+      "file": "videos/sleep-loop-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665
+    },
+    "dock-left": {
+      "file": "videos/dock-left-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665,
+      "visibleBounds": [
+        0,
+        42,
+        99.33333333333333,
+        152.0
+      ],
+      "presentation": {
+        "scale": 1.2891662484535737,
+        "x": 0,
+        "y": -34.144982435050096,
+        "referenceEyeDistance": 40.021487660160616,
+        "sourceEyeDistance": 31.044473672940637
+      }
+    },
+    "dock-right": {
+      "file": "videos/dock-right-seedance-mini-v2.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665,
+      "visibleBounds": [
+        97,
+        49,
+        94.33333333333333,
+        145.0
+      ],
+      "eyeAnchors": [
+        [
+          140.78292137225654,
+          107.49468179558208
+        ],
+        [
+          166.58092685856857,
+          96.64666789878174
+        ]
+      ],
+      "presentation": {
+        "scale": 1.4300536011857459,
+        "x": -82.57029142766321,
+        "y": -50.07262645810155,
+        "referenceEyeDistance": 40.021487660160616,
+        "sourceEyeDistance": 27.986005298665958
+      }
+    },
+    "dock-bottom": {
+      "file": "videos/dock-bottom-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665,
+      "visibleBounds": [
+        48,
+        137,
+        95.0,
+        71.0
+      ],
+      "presentation": {
+        "scale": 1.8189187251265202,
+        "x": -78.61619761214594,
+        "y": -170.3350948263162,
+        "referenceEyeDistance": 40.021487660160616,
+        "sourceEyeDistance": 22.00290046350301
+      }
     }
   }
 }

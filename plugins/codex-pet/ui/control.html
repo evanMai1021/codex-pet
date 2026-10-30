@@ -38,13 +38,13 @@ async function load(){try{show(await call('pet_settings_read'));ready=true;lock(
 $('retry').onclick=load;
 
 function showUpdate(v){
- $('updateVersions').textContent='桌宠 '+(v.runtimeVersion||'未安装')+' · 插件 '+v.pluginVersion+(v.latestVersion?' · 最新 '+v.latestVersion:'');
- const state=v.state,active=state&&['checking','downloading','extracting','switching'].includes(state.stage);updateBusy=!!active;lock();
+ $('updateVersions').textContent='桌宠 '+(v.runtimeVersion||'未安装')+' · 插件 '+v.pluginVersion+(v.latestVersion?' · 最新 '+v.latestVersion:'')+(v.latestRevision?' · 修订 '+v.latestRevision:'');
+ const state=v.state&&(['checking','downloading','extracting','switching','error'].includes(v.state.stage)||!v.updateAvailable)?v.state:null,active=state&&['checking','downloading','extracting','switching'].includes(state.stage);updateBusy=!!active;lock();
  $('checkUpdate').disabled=updateBusy;$('installUpdate').disabled=updateBusy||!v.updateAvailable||!v.ready;
  $('installUpdate').textContent=v.runtimeVersion?'更新桌宠与插件':'安装桌宠';
  $('releaseNotes').textContent=v.notes||'暂无更新说明';
  const labels={checking:'正在检查正式版本…',downloading:'正在下载',extracting:'校验通过，正在解压…',switching:'正在保存设置并切换版本…',complete:'更新完成，请重新加载插件面板。',error:'更新未完成'};
- $('updateMessage').textContent=state?(state.message||labels[state.stage]||state.stage)+(state.total?' · '+Math.round(state.received/state.total*100)+'%':''):(v.updateAvailable?(v.ready?'发现新版本，可以在这里更新。':'新版本发布附件尚未就绪，请稍后重试。'):'当前已是最新版本。');
+ $('updateMessage').textContent=state?(state.message||labels[state.stage]||state.stage)+(state.total?' · '+Math.round(state.received/state.total*100)+'%':''):(v.updateAvailable?(v.ready?'发现版本或同版本修订，可以在这里更新。':'新版本发布附件尚未就绪，请稍后重试。'):'当前已是最新版本。');
 }
 async function checkUpdate(){try{showUpdate(await call('pet_update_check'));}catch(e){$('updateMessage').textContent=e.message;}}
 $('checkUpdate').onclick=checkUpdate;

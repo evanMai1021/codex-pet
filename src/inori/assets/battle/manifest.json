@@ -10247,5 +10247,182 @@
     "sleep": "continuousSleepLoop",
     "stretch": "continuousStretch",
     "doze": "continuousDoze"
+  },
+  "videos": {
+    "idle": {
+      "file": "videos/idle-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4791.666666666667,
+      "eyeAnchors": [
+        [
+          77.58274479555844,
+          88.06232474429741
+        ],
+        [
+          112.52683249054712,
+          86.31508815088152
+        ]
+      ]
+    },
+    "working": {
+      "file": "videos/working-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4791.666666666667
+    },
+    "waiting": {
+      "file": "videos/waiting-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4791.666666666667
+    },
+    "completed": {
+      "file": "videos/completed-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 5041.666666666667
+    },
+    "error": {
+      "file": "videos/error-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 5041.666666666667
+    },
+    "interrupted": {
+      "file": "videos/interrupted-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 5041.666666666667
+    },
+    "unknown": {
+      "file": "videos/unknown-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4791.666666666667
+    },
+    "wave": {
+      "file": "videos/wave-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 5041.666666666667
+    },
+    "peace": {
+      "file": "videos/peace-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 5041.666666666667
+    },
+    "stretch": {
+      "file": "videos/stretch-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 5041.666666666667
+    },
+    "sleepEnter": {
+      "file": "videos/sleep-enter-seedance-mini-v1.webm",
+      "loop": false,
+      "frameMs": 41.666666666666664,
+      "durationMs": 5041.666666666667
+    },
+    "sleep": {
+      "file": "videos/sleep-loop-seedance-mini-v1.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3125.0
+    },
+    "doze": {
+      "file": "videos/doze-seedance-mini-v2.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4791.666666666667
+    },
+    "dock-left": {
+      "file": "videos/dock-left-seedance-mini-v2.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 4791.666666666667,
+      "visibleBounds": [
+        0,
+        44,
+        108.0,
+        150.0
+      ],
+      "eyeAnchors": [
+        [
+          21.703119958475373,
+          105.2531529256625
+        ],
+        [
+          52.72949925109702,
+          122.22853207487525
+        ]
+      ],
+      "presentation": {
+        "scale": 0.9892863832256734,
+        "x": 0,
+        "y": 2.078441654219347,
+        "referenceEyeDistance": 34.9877421470496,
+        "sourceEyeDistance": 35.366646847971715
+      }
+    },
+    "dock-right": {
+      "file": "videos/dock-right-seedance-mini-v2.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665,
+      "visibleBounds": [
+        96,
+        53,
+        96.0,
+        141.0
+      ],
+      "eyeAnchors": [
+        [
+          139.20261354355316,
+          109.54861688150278
+        ],
+        [
+          162.35121938634003,
+          98.0745563962151
+        ]
+      ],
+      "presentation": {
+        "scale": 1.3542111119861835,
+        "x": -68.00853350134723,
+        "y": -51.773188935267726,
+        "referenceEyeDistance": 34.9877421470496,
+        "sourceEyeDistance": 25.836253917407355
+      }
+    },
+    "dock-bottom": {
+      "file": "videos/dock-bottom-seedance-mini-v2.webm",
+      "loop": true,
+      "frameMs": 41.666666666666664,
+      "durationMs": 3791.6666666666665,
+      "visibleBounds": [
+        40,
+        137,
+        111.66666666666667,
+        71.0
+      ],
+      "eyeAnchors": [
+        [
+          83.7748764238126,
+          184.42299200906552
+        ],
+        [
+          106.19030898876404,
+          181.4502829343755
+        ]
+      ],
+      "presentation": {
+        "scale": 1.5473296781824326,
+        "x": -52.54364910551353,
+        "y": -113.84457306194598,
+        "referenceEyeDistance": 34.9877421470496,
+        "sourceEyeDistance": 22.611692026839346
+      }
+    }
   }
 }
