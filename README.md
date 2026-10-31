@@ -69,6 +69,17 @@ Windows 若提示插件缓存被占用，先保存工作并关闭使用旧插件
 - 真实审批等待及解除尚未完整验收；不提供聊天直接发送、审批响应、独立完成提醒或回复草稿。
 - 不同显示器、缩放比例和驱动下的最终窗口表现仍建议实际确认。
 
+## 制作自己的公仔
+
+附带[自定义公仔Skill](plugins/codex-pet/skills/create-codex-pet/SKILL.md)，支持换角色、替换动作，以及在源码中增加新的互动动作与触发入口。
+
+- [下载独立Skill包](https://github.com/evanMai1021/codex-pet/releases/latest/download/create-codex-pet-skill.zip)，保留整个文件夹和参考文档。
+- [制作与接入教程](docs/CUSTOM-PET.md)：图集格式、视频回退、动作触发和独立副本验证。
+- [用豆包等AI生成视频](plugins/codex-pet/skills/create-codex-pet/references/ai-video.md)：需求单、抠像、透明WebM转换及验收。
+- [可复制的视频提示词](plugins/codex-pet/skills/create-codex-pet/references/video-prompts.md)：共同约束、日常状态、互动、睡眠、趴边与新动作示例。
+
+生成素材后仍需接入与验证；当前没有直接导入任意角色的按钮。外部AI的费用和素材上传由使用者自行决定，项目不会自动调用。
+
 ## 文档与更新记录
 
 - 操作、设置、更新与卸载：[使用说明](docs/USAGE.md)。

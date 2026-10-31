@@ -1,22 +1,52 @@
-# 用自己的公仔
+# 制作自己的公仔与新动作
 
-两套内置楪祈服装可直接在设置中选择。当前没有设置窗口中的通用外部角色导入按钮；自制公仔采用“兼容素材包 + 单独源码副本”的方式，完成后重新启动或构建。
+两套内置服装可以直接在设置中选择。自制角色目前采用“兼容素材包＋独立源码副本”的方式；没有通用的运行时角色导入按钮。别人可以替换已有动作，也可以修改源码增加新的互动动作。
 
-## 交给 Codex 或其他 AI
+## 给Codex使用的Skill
 
-在 Codex 安装本地插件后可请求：“使用 $create-codex-pet 帮我制作一个原创公仔，保留默认楪祈，先做素材与检查，不覆盖当前运行版。”
+- [完整Skill目录](../plugins/codex-pet/skills/create-codex-pet)：包括SKILL.md和references，使用时保留整个文件夹。
+- [下载独立Skill包](https://github.com/evanMai1021/codex-pet/releases/latest/download/create-codex-pet-skill.zip)：解压后得到create-codex-pet目录，按你的AI工具支持的Skill安装方式添加；仅下载ZIP不代表已经安装。
+- 不支持Skill的AI：把SKILL.md及任务所需references交给它，并提供项目源码位置。纯聊天AI只能交付提示词、素材和步骤，不能声称已修改本机文件。
 
-不支持 Skill 的 AI：将仓库 `plugins/codex-pet/skills/create-codex-pet/SKILL.md` 和同目录 references/asset-format.md 提供给它，说明仓库所在位置，要求按其中格式生成文件。纯聊天 AI 无法读写本机时，先让它交付图集、JSON 和步骤，再在本机完成检查。
+独立Skill包可单独更新；已发布插件ZIP中的内置Skill可能早于本页，应以仓库当前Skill和独立包为准。更新说明或Skill不会自动更换用户的桌宠程序。
 
-## 制作流程
+在Codex中可这样请求：
 
-1. 准备自己有权使用的正面角色参考。明确角色风格、透明背景、脸和脚的固定锚点。先做待机与一次互动的小样。
-2. 在自己的工作目录制作 PNG 图集与 manifest.json，参考格式文件。AI 生成图片后仍需裁切、定位及尺寸检查；不能把一张图直接改扩展名当成完整动画。
-3. 完成待机、工作、等待、完成、错误、中断、未知、互动、伸展、睡眠与四边姿势映射。当前时间轴需要固定数量的帧索引，可复用同一静态帧，但不可声称复用帧已经形成新动画。
-4. 在仓库副本中运行 `python scripts/validate_assets.py '你的素材目录'`。看到校验通过后，先保存默认 assets/redwhite 副本，再由用户明确决定应用。
-5. 本项目提供准备命令：`python scripts/validate_assets.py '你的素材目录' --export '一个不存在的新目录'`，只导出必要 PNG、JSON 和从 JSON 生成的 JS。脚本不自动替换默认公仔。
-6. 在独立源码副本中用导出的目录替换 src/inori/assets/redwhite，再运行 `npm start -- --no-bridge`。确认角色不被裁切、透明背景正常、互动和四边姿势合理，然后再接入真实状态。
+```text
+使用 $create-codex-pet 为我适配自己的角色。先阅读项目源码和参考图，
+保留默认角色及当前运行版，先交付待机和挥手小样、清单与检查结果。
+如果需要AI生成视频，先给我逐动作需求和可复制提示词，由我选择生成工具。
+```
 
-更换图像不会自动修改界面“楪祈”名称。名称文字位于 renderer/index.html、settings/controller.cjs 和 main.cjs；若需要改名，让 AI 仅修改显示名称，保持 IPC 名称、工具名称和配置字段兼容。
+新增动作可以这样请求：
 
-默认角色、运行版和唯一素材原件都应保留。制作过程中的生成工具、是否联网以及费用，取决于用户选择的 AI；本项目的素材检查脚本免费本地运行，不会自动调用模型。
+```text
+使用 $create-codex-pet 增加一个“点头”互动动作，动作ID为nod。
+先说明触发入口、单次时长、结束后回到哪个状态、PNG回退和必要代码改动。
+在独立副本验证，不把素材文件存在当成动作已接入，不覆盖当前运行版。
+```
+
+## 图集与视频
+
+1. 准备有权使用的全身参考图，先固定服装、脸部大小和脚底锚点。
+2. 先做待机、一次互动的小样，再补齐其他状态。PNG和视频均需实际查看，不能只改扩展名。
+3. [图集/清单格式](../plugins/codex-pet/skills/create-codex-pet/references/asset-format.md)说明裁切、回退、视频几何及必要帧槽位。
+4. [视频制作流程](../plugins/codex-pet/skills/create-codex-pet/references/ai-video.md)说明如何用豆包等AI生成、抠像、转码、验证和接入；[提示词模板](../plugins/codex-pet/skills/create-codex-pet/references/video-prompts.md)包含共同约束、16类动作和新动作示例。
+5. [新增动作接入](../plugins/codex-pet/skills/create-codex-pet/references/actions.md)说明为什么除了清单还要改触发路由、时长和回退。
+
+只有素材制作者可能需要FFmpeg等处理工具，普通桌宠用户不需要安装；本项目不会自动调用外部付费模型或上传参考图。
+
+## 检查与应用
+
+在源码根目录运行：
+
+```powershell
+python scripts/validate_assets.py '你的角色目录'
+python scripts/validate_assets.py '你的角色目录' --export '一个不存在的新目录'
+```
+
+上述导出仅处理PNG和清单，含视频时另行复制清单引用的WebM并完成编码/Alpha检查。不要据此宣称完整视频包已验收。导出manifest.js默认使用InoriAssets；接入战斗服目录时，按该目录加载约定使用InoriBattleAssets。
+
+在独立源码副本接入导出的角色后，运行npm start -- --no-bridge，验证透明边缘、脸部比例、动作触发与结束、减少动态、四边姿势、缩放、视频失败回退。接入内置目录时还应运行python scripts/validate_builtin_assets.py。校验器通过不等于动画美观或真实任务接入已通过。
+
+改角色显示名或把新角色注册为第三个选择项，需要有限源码适配，不代表已有通用导入器。不要更改账户、工具身份或真实任务状态来配合画面；也不要覆盖唯一素材原件。
