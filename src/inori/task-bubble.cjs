@@ -36,6 +36,7 @@ function createTaskBubble({hidden=false,onRefresh=()=>{},onConfirm=()=>{}}={}){
   if(!model.visible)model={visible:true,state:snapshot.status?.state||'unknown',label:snapshot.status?.state==='idle'?'暂无活动任务':'状态暂不可确认',title:snapshot.status?.state==='idle'?'暂无进行中的任务':'状态暂不可确认',progress:'',stage:'',action:'',count:0};
   if(model.state!==lastState){phraseIndex=0;lastState=model.state;}model.headline=model.state==='idle'?'陪你把事情做好呀～':bubbleHeadline(model,options,phraseIndex);
   model.page=page;model.quota=snapshot.quota||{};model.dailyUsage=snapshot.dailyUsage||{};model.threadUsage=snapshot.threadUsage||{};
+  model.quotaStyle=options.quotaStyle==='style1'?'style1':'style2';
   model.currentThreadId=snapshot.status?.threadId||'';model.selectedThreadId=selectedThreadId;
   const display=screen.getDisplayMatching(anchor),area=display.workArea,requested=[.8,1,1.2,1.4].includes(options.bubbleScale)?options.bubbleScale:1,scale=Math.min(requested,area.width/WIDTH,area.height/HEIGHT);
   const bounds=placeBubble(anchor,area,Math.round(WIDTH*scale),Math.round(HEIGHT*scale),options.obstacles||[]);

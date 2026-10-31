@@ -39,4 +39,13 @@ function createPluginLeaseWatch(enabled,quit){
  };
  watch.hasOwners=()=>owners.size>0;return watch;
 }
-module.exports={createDesktopExitGate,createDesktopPidWatch,createPluginLeaseWatch};
+function createDesktopWindowExitGate(now=Date.now,graceMs=900){
+ let seen=false,missingSince=null;
+ return (present,enabled)=>{
+  if(present===true){seen=true;missingSince=null;return false;}
+  if(present!==false||!seen||!enabled){missingSince=null;return false;}
+  if(missingSince===null)missingSince=now();
+  return now()-missingSince>=graceMs;
+ };
+}
+module.exports={createDesktopExitGate,createDesktopPidWatch,createPluginLeaseWatch,createDesktopWindowExitGate};

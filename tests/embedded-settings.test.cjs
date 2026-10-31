@@ -2,7 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {validatePatch,properties}=require('../src/inori/settings/schema.cjs');
 test('every native setting is supported with strict whole-patch validation',()=>{
- assert.equal(Object.keys(properties).length,11);
+ assert.equal(Object.keys(properties).length,13);
  for(const p of [null,[],{}, {size:.9},{dock:'unknown'},{skin:'cat'},{visible:1},{bubbleCustomLine:'x'.repeat(57)},{arbitrary:'x'},{followCodex:'true'}])assert.throws(()=>validatePatch(p));
  assert.throws(()=>validatePatch({dock:'left'},{dockEnabled:false}));
  assert.deepEqual(validatePatch({dockEnabled:true,dock:'top'},{dockEnabled:false}),{dockEnabled:true,dock:'top'});

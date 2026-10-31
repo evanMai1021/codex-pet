@@ -9,6 +9,11 @@ const UI='ui://codex-pet/control-panel';
 const settingsCapability={readTool:'pet_settings_read',updateTool:'pet_settings_update'};
 const startup=integration.createPluginStartup();
 let attached=false,closing=false,attaching;
+let starting;
+function startAutomatically(){
+ if(!starting)starting=(async()=>{await startup();for(let i=0;i<30&&!attached&&!closing;i++){await attach();if(!attached)await new Promise(r=>setTimeout(r,100));}})().catch(()=>{process.stderr.write('Codex Pet: automatic launch failed; open the pet manually to inspect configuration.\n');});
+ return starting;
+}
 async function attach(){if(attached||closing)return;if(!attaching)attaching=(async()=>{try{await control.lifecycle({action:'attach',pid:process.pid});attached=true;}catch{}})().finally(()=>{attaching=null;});return attaching;}
 
 const empty={type:'object',properties:{},additionalProperties:false};
@@ -25,18 +30,18 @@ const tools=[
  {name:'pet_settings_update',title:'修改桌宠设置',description:'立即应用并保存指定设置，不打开独立窗口。',inputSchema:{type:'object',properties:{set:{type:'object',properties,minProperties:1,additionalProperties:false}},required:['set'],additionalProperties:false},outputSchema:settingsSchema,annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true,openWorldHint:false}}
 ];
 async function readSettings(patch){
- const data=await control.settings(patch);await attach();
+ const data=await control.settings(patch);void attach();
  return {schema:{type:'object',properties,additionalProperties:false},values:data.settings,status:data.status,phrases:data.phrases,skins:data.skins,layout:[
-  {kind:'group',title:'桌面公仔',items:[{kind:'tool',tool:'pet_open'},...['visible','followCodex','skin','size','reduced','dockEnabled','dock'].map(property=>({kind:'property',property}))]},
-  {kind:'group',title:'任务气泡',items:['bubbleEnabled','bubbleScale','bubbleTone','bubbleCustomLine'].map(property=>({kind:'property',property}))}
+  {kind:'group',title:'桌面公仔',items:[{kind:'tool',tool:'pet_open'},...['visible','quotaBadgeVisible','followCodex','skin','size','reduced','dockEnabled','dock'].map(property=>({kind:'property',property}))]},
+  {kind:'group',title:'任务气泡',items:['bubbleEnabled','quotaStyle','bubbleScale','bubbleTone','bubbleCustomLine'].map(property=>({kind:'property',property}))}
  ]};
 }
 function structured(value){return {content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value};}
 async function handle(m){
  if(!m||m.jsonrpc!=='2.0'||typeof m.method!=='string')return {jsonrpc:'2.0',id:m?.id??null,error:{code:-32600,message:'Invalid request'}};
- if(m.id===undefined){if(m.method==='notifications/initialized')try{await startup();for(let i=0;i<30&&!attached&&!closing;i++){await attach();if(!attached)await new Promise(r=>setTimeout(r,100));}}catch{process.stderr.write('Codex Pet: automatic launch failed; open the pet manually to inspect configuration.\n');}return null;}
+ if(m.id===undefined){if(m.method==='notifications/initialized')await startAutomatically();return null;}
  const result=value=>({jsonrpc:'2.0',id:m.id,result:value});
- if(m.method==='initialize')return result({protocolVersion:['2025-11-25','2025-06-18','2024-11-05'].includes(m.params?.protocolVersion)?m.params.protocolVersion:'2025-11-25',capabilities:{tools:{},resources:{},extensions:{'openai/settings':settingsCapability},experimental:{'openai/settings':settingsCapability}},serverInfo:{name:'codex-pet',version:'0.1.14'}});
+ if(m.method==='initialize'){setImmediate(()=>{if(!closing)void startAutomatically();});return result({protocolVersion:['2025-11-25','2025-06-18','2024-11-05'].includes(m.params?.protocolVersion)?m.params.protocolVersion:'2025-11-25',capabilities:{tools:{},resources:{},extensions:{'openai/settings':settingsCapability},experimental:{'openai/settings':settingsCapability}},serverInfo:{name:'codex-pet',version:'0.1.15'}});}
  if(m.method==='ping')return result({});
  if(m.method==='tools/list')return result({tools});
  if(m.method==='resources/list')return result({resources:[{uri:UI,name:'楪祈桌宠控制面板',mimeType:'text/html;profile=mcp-app'}]});
@@ -54,7 +59,7 @@ async function handle(m){
    if(name==='pet_update_status')return result(structured(releases.status()));
    if(name==='pet_update_install')return result(structured(await releases.install()));
    if(['pet_settings_read','pet_control_panel','pet_open_settings'].includes(name))return result(structured(await readSettings()));
-   if(name==='pet_open'){const opened=await integration.launchPet();await attach();return result(structured(opened));}
+   if(name==='pet_open'){let data=await readSettings({visible:true});for(let i=0;i<30&&!data.values.visible;i++){await new Promise(r=>setTimeout(r,50));data=await readSettings();}if(!data.values.visible)throw Error('公仔尚未显示，请稍后重试');return result(structured({opened:true,visible:true,character:'inori',settings:false}));}
    if(name==='pet_settings_update'){
     if(Object.keys(args).length!==1)throw Error('工具参数无效');
     const patch=validatePatch(args.set);

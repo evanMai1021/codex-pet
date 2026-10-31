@@ -26,6 +26,11 @@ jobs:
           revision=$(jq -r .revision release-revision.json)
           marker="<!-- codex-pet-revision:${revision} -->"
           grep -Fqx "$marker" docs/RELEASE-NOTES.md
+          tags=$(gh release list --limit 100 --json tagName --jq '.[].tagName')
+          if ! grep -Fqx "v$version" <<< "$tags"; then
+            echo "Release does not exist yet; keep notes in source until publication."
+            exit 0
+          fi
           gh release view "v$version" --json isDraft,body > "$RUNNER_TEMP/release-notes-before.json"
           jq -e --arg marker "$marker" '.isDraft == false and (.body | contains($marker))' "$RUNNER_TEMP/release-notes-before.json" > /dev/null
           gh release edit "v$version" --notes-file docs/RELEASE-NOTES.md

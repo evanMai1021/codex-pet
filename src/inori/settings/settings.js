@@ -5,10 +5,13 @@ function showPhraseList(){
  $('bubblePhraseList').replaceChildren(...(group?.lines||[]).map(line=>{const li=document.createElement('li');li.textContent=line;return li;}));
 }
 function show(v){
+ document.querySelectorAll('[data-preview-skin]').forEach(el=>el.classList.toggle('selected',el.dataset.previewSkin===v.settings.skin));document.querySelectorAll('[data-preview-style]').forEach(el=>el.classList.toggle('selected',el.dataset.previewStyle===v.settings.quotaStyle));
  const signaturePhrases=JSON.stringify(v.phrases||[]);
  if(signaturePhrases!==phraseSignature){phraseSignature=signaturePhrases;phraseGroups=v.phrases||[];const selected=$('bubblePhraseState').value;$('bubblePhraseState').replaceChildren(...phraseGroups.map(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.label;return o;}));if(phraseGroups.some(g=>g.id===selected))$('bubblePhraseState').value=selected;showPhraseList();}
  $('bubbleTone').value=v.settings.bubbleTone||'cute';
  if(document.activeElement!==$('bubbleCustomLine'))$('bubbleCustomLine').value=v.settings.bubbleCustomLine||'';
+ $('quotaBadgeVisible').checked=v.settings.quotaBadgeVisible!==false;
+ $('quotaStyle').value=v.settings.quotaStyle||'style2';
  $('bubbleEnabled').checked=v.settings.bubbleEnabled!==false;
  if(document.activeElement!==$('bubbleScale')){$('bubbleScale').value=Math.round((v.settings.bubbleScale??1)*100);$('bubbleScaleValue').textContent=$('bubbleScale').value+'% · 独立于公仔大小';}
  $('followCodex').checked=v.settings.followCodex===true;
@@ -22,7 +25,7 @@ function show(v){
 }
 function feedback(text,error=false){$('message').textContent=text;$('message').classList.toggle('error',error);}
 async function change(patch){try{show(await window.pet.set(patch));feedback('已保存');}catch(e){try{show(await window.pet.get());}catch{}feedback(e.message,true);}}
-for(const id of ['visible','reduced','dockEnabled','followCodex','bubbleEnabled'])$(id).onchange=()=>change({[id]:$(id).checked});
+for(const id of ['visible','reduced','dockEnabled','followCodex','bubbleEnabled','quotaBadgeVisible'])$(id).onchange=()=>change({[id]:$(id).checked});
 $('bubbleScale').oninput=()=>{$('bubbleScaleValue').textContent=$('bubbleScale').value+'% · 独立于公仔大小';};
 $('bubbleScale').onchange=()=>change({bubbleScale:Number($('bubbleScale').value)/100});
 $('bubbleTone').onchange=()=>change({bubbleTone:$('bubbleTone').value});
@@ -33,3 +36,5 @@ $('size').oninput=()=>{$('sizeValue').textContent=$('size').value+'%';clearTimeo
 $('size').onchange=()=>{clearTimeout(sizeTimer);change({size:Number($('size').value)/100});};
 $('import').onclick=async()=>{$('import').disabled=true;try{const v=await window.pet.importSkin();if(!v.cancelled)show(v);feedback(v.cancelled?'已取消导入':'已导入并切换公仔');}catch(e){feedback(e.message,true);}finally{$('import').disabled=false;}};
 window.pet.get().then(show).catch(e=>feedback(e.message,true));window.pet.onUpdate(show);
+
+$('quotaStyle').onchange=()=>change({quotaStyle:$('quotaStyle').value});

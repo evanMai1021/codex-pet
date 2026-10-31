@@ -35,3 +35,15 @@ test('malformed lifecycle values cannot trigger shutdown',()=>{
  const gate=createDesktopExitGate();gate(true);for(const value of [undefined,'false',0,{},null])assert.equal(gate(value),false);
  assert.equal(gate(false),false);
 });
+
+test('desktop window exit waits for confirmed destruction, never for minimization or startup absence',()=>{
+ const {createDesktopWindowExitGate}=require('../src/inori/desktop-exit.cjs');let clock=0;const gate=createDesktopWindowExitGate(()=>clock,900);
+ assert.equal(gate(false,true),false);clock=2000;assert.equal(gate(false,true),false);
+ assert.equal(gate(true,true),false);assert.equal(gate(true,true),false);
+ assert.equal(gate(false,true),false);clock+=899;assert.equal(gate(false,true),false);clock++;assert.equal(gate(false,true),true);
+});
+test('unknown windows, short recreation gaps and disabled follow mode do not close the pet',()=>{
+ const {createDesktopWindowExitGate}=require('../src/inori/desktop-exit.cjs');let clock=0;const gate=createDesktopWindowExitGate(()=>clock,900);
+ gate(true,true);gate(false,true);clock=500;assert.equal(gate(true,true),false);clock=2000;assert.equal(gate(false,true),false);
+ clock=3000;assert.equal(gate(null,true),false);assert.equal(gate(false,true),false);clock=4000;assert.equal(gate(false,false),false);
+});

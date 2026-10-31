@@ -12,7 +12,8 @@ def monitor_desktop(closing, publish, read=None):
         try: running = read()
         except (OSError, ValueError): running = None
         publish({'kind': 'desktopLifecycle', 'running': running,
-                 'mainPids': desktop_root_pids() if read is desktop_running else []})
+                 'mainPids': desktop_root_pids() if read is desktop_running else [],
+                 'mainWindowPresent': desktop_window_present() if read is desktop_running else None})
         closing.wait(POLL_SECONDS)
 
 def is_desktop_path(path):
@@ -111,3 +112,30 @@ def desktop_running():
 
 def desktop_root_pids():
     return list(_desktop_probe.pids) if _desktop_probe else []
+
+
+def desktop_window_present():
+    """Existence only: hidden/minimized windows still count; no titles/content."""
+    pids=set(desktop_root_pids())
+    if os.name!='nt' or not pids:return None
+    try:
+        user=ctypes.WinDLL('user32',use_last_error=True)
+        callback_type=ctypes.WINFUNCTYPE(wintypes.BOOL,wintypes.HWND,wintypes.LPARAM)
+        user.EnumWindows.argtypes=[callback_type,wintypes.LPARAM]
+        user.EnumWindows.restype=wintypes.BOOL
+        user.GetWindowThreadProcessId.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.DWORD)]
+        user.GetClassNameW.argtypes=[wintypes.HWND,wintypes.LPWSTR,ctypes.c_int]
+        user.GetWindow.argtypes=[wintypes.HWND,wintypes.UINT]
+        user.GetWindow.restype=wintypes.HWND
+        found=False
+        @callback_type
+        def visit(hwnd,_):
+            nonlocal found
+            pid=wintypes.DWORD();user.GetWindowThreadProcessId(hwnd,ctypes.byref(pid))
+            if pid.value in pids and not user.GetWindow(hwnd,4):
+                name=ctypes.create_unicode_buffer(128)
+                if user.GetClassNameW(hwnd,name,len(name)) and name.value=='Chrome_WidgetWin_1':
+                    found=True
+            return True
+        return found if user.EnumWindows(visit,0) else None
+    except (OSError,ValueError,AttributeError):return None

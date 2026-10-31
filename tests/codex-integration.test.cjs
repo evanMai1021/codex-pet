@@ -1,8 +1,9 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 const integration=require('../src/inori/integration.cjs');
-const server=require('../plugins/codex-pet/server/index.cjs');
 const base=process.env.INORI_INTEGRATION_TEST_DIR;
+process.env.CODEX_PET_HOME=path.join(base,'plugin-home');fs.mkdirSync(process.env.CODEX_PET_HOME,{recursive:true});fs.writeFileSync(path.join(process.env.CODEX_PET_HOME,'runtime.json'),JSON.stringify({followCodex:false}));
+const server=require('../plugins/codex-pet/server/index.cjs');
 test('plugin releases its cache working directory without changing runtime preferences',()=>{
  const plugin=require('../plugins/codex-pet/server/integration.cjs'),calls=[];
  fs.mkdirSync(base,{recursive:true});
@@ -58,15 +59,15 @@ test('plugin lifecycle starts once only when enabled and never opens settings',a
  const disabled=integration.createPluginStartup({read:()=>({followCodex:false}),launch:()=>{throw Error('must not launch');}});
  assert.equal((await disabled()).started,false);
 });
-test('open pet launches and settings returns embedded UI without native launch',async()=>{
+test('open pet confirms display and settings returns embedded UI without redundant launch',async()=>{
  const bridge=require('../plugins/codex-pet/server/integration.cjs'),old=bridge.launchPet,calls=[];
- const control=require('../plugins/codex-pet/server/control-client.cjs'),before=control.settings;control.settings=async()=>({settings:{},phrases:[],status:{},skins:[]});
+ const control=require('../plugins/codex-pet/server/control-client.cjs'),before=control.settings;control.settings=async()=>({settings:{visible:true},phrases:[],status:{},skins:[]});
  bridge.launchPet=async(args=[])=>{calls.push(args);return {opened:true};};
  try{
   for(const name of ['pet_open','pet_open_settings']){
    const r=await server.handle({jsonrpc:'2.0',id:1,method:'tools/call',params:{name,arguments:{}}});
    assert.ok(!r.result.isError);
   }
-  assert.deepEqual(calls,[[]]);
+  assert.deepEqual(calls,[]);
  }finally{bridge.launchPet=old;control.settings=before;}
 });

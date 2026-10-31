@@ -9,8 +9,8 @@
    <p id="action" hidden></p><small id="note" hidden>审批状态来自试验性桌面接口</small>
    <section class="chat-usage"><label for="thread">聊天累计用量</label><select id="thread" aria-label="选择聊天用量"></select><div class="number" id="chat-million">正在统计…</div><div class="muted" id="chat-total"></div><small id="chat-health"></small></section>
   </section>
-  <section id="page-quota" role="tabpanel" aria-label="剩余额度" hidden><div id="quota-windows"></div><p id="quota-health"></p><small id="account"></small><button id="confirm" hidden>确认使用此账户</button><button id="refresh" class="secondary">刷新用量</button></section>
+  <section id="page-quota" role="tabpanel" aria-label="剩余额度" hidden><div class="quota-heading"><strong>剩余额度</strong></div><div id="quota-summary" role="group" aria-label="剩余额度摘要"></div><div id="quota-details"><div id="quota-windows"></div></div><p id="quota-health" role="status"></p><small id="account"></small><button id="confirm" hidden>确认使用此账户</button><button id="refresh" class="secondary">刷新用量</button></section>
   <section id="page-usage" role="tabpanel" aria-label="今日Token" hidden><div class="section-title">今日 Token</div><div class="number" id="today-million">正在统计…</div><div class="muted" id="today-total"></div><div id="breakdown"></div><small id="usage-date"></small></section>
  </div>
  <nav aria-label="气泡翻页"><button id="previous" class="icon" aria-label="上一页">‹</button><div role="tablist" aria-label="内容页面"><button role="tab" data-page="task" aria-controls="page-task">任务</button><button role="tab" data-page="quota" aria-controls="page-quota">额度</button><button role="tab" data-page="usage" aria-controls="page-usage">今日 Token</button></div><button id="next" class="icon" aria-label="下一页">›</button></nav>
-</main><script src="bubble.js"></script></body></html>
+</main><script src="quota-view.js"></script><script src="bubble.js"></script></body></html>

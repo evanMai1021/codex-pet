@@ -52,4 +52,28 @@ class DesktopDetectionTests(unittest.TestCase):
         self.assertFalse(module.is_desktop_path(r'C:\Users\me\AppData\Local\OpenAI\Codex\bin\hash\codex.exe'))
         self.assertFalse(module.is_desktop_path(r'C:\Users\me\.codex\plugins\.plugin-appserver\codex.exe'))
         self.assertFalse(module.is_desktop_path(r'C:\other\ChatGPT.exe'))
+    def test_main_window_existence_includes_hidden_or_minimized_and_excludes_auxiliary(self):
+        class Function:
+            def __init__(self,fn):self.fn=fn
+            def __call__(self,*args):return self.fn(*args)
+        class User:
+            def __init__(self):
+                self.rows={1:(100,'Chrome_WidgetWin_1',0)}
+                self.EnumWindows=Function(self.enum)
+                self.GetWindowThreadProcessId=Function(lambda h,p:setattr(p._obj,'value',self.rows[h][0]) or 1)
+                self.GetClassNameW=Function(lambda h,b,n:setattr(b,'value',self.rows[h][1]) or len(self.rows[h][1]))
+                self.GetWindow=Function(lambda h,k:self.rows[h][2])
+            def enum(self,callback,_):
+                for hwnd in self.rows:callback(hwnd,0)
+                return 1
+        user=User()
+        with patch.object(module,'desktop_root_pids',return_value=[100]),patch.object(module.ctypes,'WinDLL',return_value=user):
+            self.assertTrue(module.desktop_window_present())
+            user.rows={1:(100,'Chrome_WidgetWin_0',0)};self.assertFalse(module.desktop_window_present())
+            user.rows={1:(100,'Chrome_WidgetWin_1',2)};self.assertFalse(module.desktop_window_present())
+            user.rows={1:(101,'Chrome_WidgetWin_1',0)};self.assertFalse(module.desktop_window_present())
+            user.rows={};self.assertFalse(module.desktop_window_present())
+            user.EnumWindows=Function(lambda *_:0);self.assertIsNone(module.desktop_window_present())
+    def test_unbound_windows_are_unknown(self):
+        with patch.object(module,'desktop_root_pids',return_value=[]):self.assertIsNone(module.desktop_window_present())
 if __name__=='__main__':unittest.main()

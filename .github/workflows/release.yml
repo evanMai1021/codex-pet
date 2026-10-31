@@ -40,7 +40,7 @@ jobs:
           INORI_INTEGRATION_TEST_DIR: ${{ github.workspace }}/.release-tests
           INORI_USAGE_TEST_DIR: ${{ github.workspace }}/.release-tests/usage
         run: |
-          node --test --test-isolation=none tests/*.test.cjs
+          node --test tests/*.test.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python -B -m unittest discover -s tests -p 'test_*.py'
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -79,28 +79,3 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           gh release edit "v$version" --draft=false --latest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-      - name: Retire explicitly consolidated releases after successful publication
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          $file = '.github/release-consolidation.json'
-          if (!(Test-Path $file)) { exit 0 }
-          $plan = Get-Content $file -Raw | ConvertFrom-Json
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ($plan.version -ne $version) { exit 0 }
-          foreach ($entry in $plan.retired) {
-            if ($entry.tag -notin @('v0.1.15','v0.1.16','v0.1.17')) { throw 'Unexpected retirement target' }
-            $sha = gh api "repos/$env:GH_REPO/git/ref/tags/$($entry.tag)" --jq '.object.sha' 2>$null
-            if ($LASTEXITCODE) { continue }
-            if ($sha -ne $entry.commit) { Write-Warning "Preserving changed tag $($entry.tag)"; continue }
-            gh release view $entry.tag --json id *> $null
-            if ($LASTEXITCODE -eq 0) {
-              gh release delete $entry.tag --yes
-              if ($LASTEXITCODE) { exit $LASTEXITCODE }
-            }
-            gh api --method DELETE "repos/$env:GH_REPO/git/refs/tags/$($entry.tag)"
-            if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          }
-          # Already absent retired tags are a successful, idempotent cleanup.
-          exit 0
