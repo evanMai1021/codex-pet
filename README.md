@@ -1,6 +1,6 @@
 # Codex Pet · 楪祈 0.1.15
 
-**0.1.15源码已同步，修订2026103108，尚未创建正式Release。当前公开下载仍为0.1.14。** 本轮提供额度条显示选择、两种额度布局、重置时间与服装/样式预览，并改进启动和显示控制。独立完成提醒和回复草稿已撤回。
+**0.1.15，修订2026103108。** 本版提供额度条显示选择、两种额度布局、重置时间与服装/样式预览，并改进启动和显示控制。独立完成提醒和回复草稿已撤回。
 
 偶发公仔消失及长期运行后隐藏等待2–5秒仍待现场复现；自动检查通过不代表这两项已全部解决。
 
@@ -14,7 +14,7 @@ Windows 桌面悬浮公仔。默认红白服楪祈，可选红黑战斗服。安
 
 ### 直接运行便携版
 
-1. 打开[正式下载页](https://github.com/evanMai1021/codex-pet/releases/latest)，下载 `inori-codex-pet-v0.1.14.zip`。`codex-pet-source` 是源码包，不能直接当程序运行。
+1. 打开[正式下载页](https://github.com/evanMai1021/codex-pet/releases/latest)，下载 `inori-codex-pet-v0.1.15.zip`。`codex-pet-source` 是源码包，不能直接当程序运行。
 2. 解压到有写入权限的目录，再双击 `楪祈桌宠.exe`；不要在ZIP压缩包内运行。
 3. 在Codex插件面板调整服装、大小、趴边和气泡。独立使用时，可运行 `楪祈桌宠.exe --settings` 打开设置；通过桌宠右键菜单退出。
 
@@ -22,7 +22,7 @@ Windows 桌面悬浮公仔。默认红白服楪祈，可选红黑战斗服。安
 
 需要Windows、可用的Node.js和Codex CLI。插件用于在Codex内控制桌宠；便携程序已自带所需运行库，不必为直接运行便携包安装Python或npm依赖。
 
-准备好便携程序后，下载并解压 `codex-pet-plugin-v0.1.14.zip`。在包含 `.agents` 和 `plugins` 的插件解压目录打开PowerShell：
+准备好便携程序后，下载并解压 `codex-pet-plugin-v0.1.15.zip`。在包含 `.agents` 和 `plugins` 的插件解压目录打开PowerShell：
 
 ```powershell
 codex plugin marketplace add .
