@@ -28,6 +28,18 @@ function visibleBounds(rect,area,regions,scale=1) {
  const right=Math.max(...content.map(r=>r.x+r.width))*scale,bottom=Math.max(...content.map(r=>r.y+r.height))*scale;
  return {...rect,x:Math.round(clamp(rect.x,area.x-left,Math.max(area.x-left,area.x+area.width-right))),y:Math.round(clamp(rect.y,area.y-top,Math.max(area.y-top,area.y+area.height-bottom)))};
 }
+// Reclaim badge space only on edges the previous visible content touched.
+// Free placements in the middle must not jump when the badge is toggled.
+function badgeVisibilityBounds(rect,area,previous,next,scale=1){
+ const envelope=rs=>rs.length?{left:Math.min(...rs.map(r=>r.x))*scale,right:Math.max(...rs.map(r=>r.x+r.width))*scale,top:Math.min(...rs.map(r=>r.y))*scale,bottom:Math.max(...rs.map(r=>r.y+r.height))*scale}:null;
+ const old=envelope(previous),now=envelope(next);if(!old||!now)return rect;
+ let {x,y}=rect;
+ if(Math.abs(rect.y+old.bottom-area.y-area.height)<=3)y=area.y+area.height-now.bottom;
+ else if(Math.abs(rect.y+old.top-area.y)<=3)y=area.y-now.top;
+ if(Math.abs(rect.x+old.right-area.x-area.width)<=3)x=area.x+area.width-now.right;
+ else if(Math.abs(rect.x+old.left-area.x)<=3)x=area.x-now.left;
+ return visibleBounds({...rect,x:Math.round(x),y:Math.round(y)},area,next,scale);
+}
 function chooseEdge(rect,area,threshold=24) {
   const edges=[['left',Math.abs(rect.x-area.x)],['right',Math.abs(area.x+area.width-rect.x-rect.width)],['top',Math.abs(rect.y-area.y)],['bottom',Math.abs(area.y+area.height-rect.y-rect.height)]];
   edges.sort((a,b)=>a[1]-b[1]);return edges[0][1]<=threshold?edges[0][0]:null;
@@ -80,4 +92,4 @@ function idleAnimation(state,idleMs) {
   if(idleMs>=60000&&idleMs<63000)return 'stretch';
   return 'idle';
 }
-module.exports={PRIORITY,ROWS,aggregate,bounded,visibleBounds,chooseEdge,chooseDropEdge,dockBounds,remaining,windowLabel,normalizeQuota,quotaFailure,idleAnimation};
+module.exports={PRIORITY,ROWS,aggregate,bounded,visibleBounds,badgeVisibilityBounds,chooseEdge,chooseDropEdge,dockBounds,remaining,windowLabel,normalizeQuota,quotaFailure,idleAnimation};

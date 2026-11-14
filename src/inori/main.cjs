@@ -11,7 +11,7 @@ const {mergeDesktopStatus}=require('./desktop-status/merge.cjs');
 let desktopStatus=null;
 let settingsPanel=null,settingsControl=null;
 let localStatus={kind:'status',healthy:false,threads:[],capabilities:{approval:false}};
-const {aggregate,bounded,visibleBounds,chooseEdge,chooseDropEdge,dockBounds,normalizeQuota,quotaFailure}=require('./core.cjs');
+const {aggregate,bounded,visibleBounds,badgeVisibilityBounds,chooseEdge,chooseDropEdge,dockBounds,normalizeQuota,quotaFailure}=require('./core.cjs');
 const {normalizeSkin}=require('./skins.cjs');
 const integration=require('./integration.cjs');
 const desktopExitGate=require('./desktop-exit.cjs').createDesktopExitGate();
@@ -28,6 +28,7 @@ let win,bridge,quitting=false,hovered=false,urgentTimer,saveTimer,drag=null,regi
 let applyingPetSize=false,sizeRepairTimer,failedSizeRepair='';
 let panelsResumeAt=0,lastPetGeometryAt=0;
 let placementDisplayId=null,lastPositionRequest=null;
+let badgePlacementPending=null;
 let settings={bubbleScale:1,bubbleTone:'cute',bubbleCustomLine:'',bubbleEnabled:true,quotaStyle:null,quotaBadgeVisible:true,skin:'redwhite',dock:null,dockEnabled:true,size:1,reduced:false,accountFingerprint:null,x:null,y:null};
 try{Object.assign(settings,JSON.parse(fs.readFileSync(path.join(DATA,'settings.json'),'utf8')));}catch{}
 settings.skin=normalizeSkin(settings.skin);
@@ -229,6 +230,11 @@ else{
       const next=value.filter(r=>['x','y','width','height'].every(k=>Number.isFinite(r[k]))&&r.width>0&&r.height>0).slice(0,8);
       if(!next.length)return;
       const nextPanel=next.some(r=>r.kind==='panel'),opening=nextPanel&&!panelVisible;
+      if(badgePlacementPending&&next.some(r=>r.kind==='chip')===(settings.quotaBadgeVisible!==false)){
+       const previous=badgePlacementPending;badgePlacementPending=null;
+       if(!settings.dock&&!drag&&previous.dock===settings.dock){const b=win.getBounds();const target=badgeVisibilityBounds(b,currentArea(),previous.regions,next,settings.size);movePet(target.x,target.y);lastPositionRequest=null;}
+       settlePlacement=true;
+      }
       panelVisible=nextPanel;regions=next;
       const b=win.getBounds(),placementKey=JSON.stringify([b.width,b.height,next.find(r=>r.kind==='chip')]);
       const layoutChanged=placementKey!==lastPlacementKey;lastPlacementKey=placementKey;
@@ -258,7 +264,7 @@ else{
     settingsPanel=require('./settings/controller.cjs').createSettingsPanel({
       hidden:process.argv.includes('--settings-self-test'),
       get:()=>({quotaBadgeVisible:settings.quotaBadgeVisible,quotaStyle:settings.quotaStyle,bubbleScale:settings.bubbleScale,bubbleTone:settings.bubbleTone,bubbleCustomLine:settings.bubbleCustomLine,bubbleEnabled:settings.bubbleEnabled!==false,followCodex:integration.readConfig().followCodex===true,skin:settings.skin,size:settings.size,dock:settings.dock,dockEnabled:settings.dockEnabled,reduced:settings.reduced,visible:win.isVisible(),status:snapshot.status}),
-      apply:patch=>{if('visible'in patch)setPetVisible(patch.visible,'settings');for(const key of ['bubbleScale','bubbleTone','bubbleCustomLine','quotaStyle','quotaBadgeVisible'])if(key in patch)settings[key]=patch[key];updateTaskBubble();if('bubbleEnabled'in patch)setBubbleEnabled(patch.bubbleEnabled);if('followCodex'in patch)integration.setFollowCodex(patch.followCodex);if('skin'in patch)setSkin(patch.skin);if('dockEnabled'in patch)setDockEnabled(patch.dockEnabled);if('size'in patch)resizePet(patch.size);if('dock'in patch)setDock(patch.dock);if('reduced'in patch){settings.reduced=patch.reduced;snapshot.reduced=patch.reduced;}save();send();}
+      apply:patch=>{if('quotaBadgeVisible'in patch&&patch.quotaBadgeVisible!==settings.quotaBadgeVisible)badgePlacementPending={regions:regions.slice(),dock:settings.dock};if('visible'in patch)setPetVisible(patch.visible,'settings');for(const key of ['bubbleScale','bubbleTone','bubbleCustomLine','quotaStyle','quotaBadgeVisible'])if(key in patch)settings[key]=patch[key];updateTaskBubble();if('bubbleEnabled'in patch)setBubbleEnabled(patch.bubbleEnabled);if('followCodex'in patch)integration.setFollowCodex(patch.followCodex);if('skin'in patch)setSkin(patch.skin);if('dockEnabled'in patch)setDockEnabled(patch.dockEnabled);if('size'in patch)resizePet(patch.size);if('dock'in patch)setDock(patch.dock);if('reduced'in patch){settings.reduced=patch.reduced;snapshot.reduced=patch.reduced;}save();send();}
     });
     await win.loadFile(path.join(__dirname,'renderer/index.html'));relocate();
     const leaseWatch=require('./desktop-exit.cjs').createPluginLeaseWatch(()=>integration.readConfig().followCodex===true,()=>{

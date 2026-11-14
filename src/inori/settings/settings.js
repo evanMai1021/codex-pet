@@ -1,11 +1,12 @@
 "use strict";
-const $=id=>document.getElementById(id);let skinSignature='',sizeTimer,phraseGroups=[],phraseSignature='';
+const $=id=>document.getElementById(id);let previewReady=false,previewBusy=false;let skinSignature='',sizeTimer,phraseGroups=[],phraseSignature='';
 function showPhraseList(){
  const group=phraseGroups.find(g=>g.id===$('bubblePhraseState').value)||phraseGroups[0];
  $('bubblePhraseList').replaceChildren(...(group?.lines||[]).map(line=>{const li=document.createElement('li');li.textContent=line;return li;}));
 }
 function show(v){
- document.querySelectorAll('[data-preview-skin]').forEach(el=>el.classList.toggle('selected',el.dataset.previewSkin===v.settings.skin));document.querySelectorAll('[data-preview-style]').forEach(el=>el.classList.toggle('selected',el.dataset.previewStyle===v.settings.quotaStyle));
+ previewReady=true;
+ document.querySelectorAll('[data-preview-skin]').forEach(el=>{const selected=el.dataset.previewSkin===v.settings.skin;el.classList.toggle('selected',selected);el.setAttribute('aria-checked',String(selected));});document.querySelectorAll('[data-preview-style]').forEach(el=>{const selected=el.dataset.previewStyle===v.settings.quotaStyle;el.classList.toggle('selected',selected);el.setAttribute('aria-checked',String(selected));});
  const signaturePhrases=JSON.stringify(v.phrases||[]);
  if(signaturePhrases!==phraseSignature){phraseSignature=signaturePhrases;phraseGroups=v.phrases||[];const selected=$('bubblePhraseState').value;$('bubblePhraseState').replaceChildren(...phraseGroups.map(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.label;return o;}));if(phraseGroups.some(g=>g.id===selected))$('bubblePhraseState').value=selected;showPhraseList();}
  $('bubbleTone').value=v.settings.bubbleTone||'cute';
@@ -21,10 +22,12 @@ function show(v){
  $('status').textContent=v.status.label||'状态未知';
  const signature=JSON.stringify(v.skins.map(s=>[s.id,s.name]));
  if(signature!==skinSignature){skinSignature=signature;$('skin').replaceChildren(...v.skins.map(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;return o;}));}
+ lockPreviews();
  $('skin').value=v.skin.id;$('skin').disabled=v.skins.length<2;$('import').hidden=true;$('license').textContent='当前角色许可：'+v.skin.license;$('component-state').textContent=v.settings.visible?'已显示':'已隐藏';
 }
 function feedback(text,error=false){$('message').textContent=text;$('message').classList.toggle('error',error);}
-async function change(patch){try{show(await window.pet.set(patch));feedback('已保存');}catch(e){try{show(await window.pet.get());}catch{}feedback(e.message,true);}}
+function lockPreviews(){document.querySelectorAll('[data-preview-skin],[data-preview-style]').forEach(el=>el.setAttribute('aria-disabled',String(!previewReady||previewBusy)));}
+async function change(patch){previewBusy=true;lockPreviews();try{show(await window.pet.set(patch));feedback('已保存');}catch(e){try{show(await window.pet.get());}catch{}feedback(e.message,true);}finally{previewBusy=false;lockPreviews();}}
 for(const id of ['visible','reduced','dockEnabled','followCodex','bubbleEnabled','quotaBadgeVisible'])$(id).onchange=()=>change({[id]:$(id).checked});
 $('bubbleScale').oninput=()=>{$('bubbleScaleValue').textContent=$('bubbleScale').value+'% · 独立于公仔大小';};
 $('bubbleScale').onchange=()=>change({bubbleScale:Number($('bubbleScale').value)/100});
@@ -38,3 +41,12 @@ $('import').onclick=async()=>{$('import').disabled=true;try{const v=await window
 window.pet.get().then(show).catch(e=>feedback(e.message,true));window.pet.onUpdate(show);
 
 $('quotaStyle').onchange=()=>change({quotaStyle:$('quotaStyle').value});
+
+for(const [attr,key] of [['skin','skin'],['style','quotaStyle']]){
+ const cards=[...document.querySelectorAll('[data-preview-'+attr+']')];
+ cards.forEach((el,index)=>{
+  const choose=()=>{if(el.getAttribute('aria-disabled')!=='true')change({[key]:el.getAttribute('data-preview-'+attr)});};
+  el.onclick=choose;
+  el.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose();}else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const next=cards[(index+(['ArrowLeft','ArrowUp'].includes(e.key)?-1:1)+cards.length)%cards.length];next.focus();next.click();}};
+ });
+}

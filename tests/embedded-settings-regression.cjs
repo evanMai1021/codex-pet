@@ -46,6 +46,15 @@ app.whenReady().then(async()=>{
  record('native-pet-remains-hidden-when-reading',!api.getWindow().isVisible());
  record('no-open-settings-button',await js(`!${doc}.getElementById('open')&&![...${doc}.querySelectorAll('button')].some(b=>b.textContent==='打开设置')`));
  async function change(id,value){await js(`{const el=${doc}.getElementById(${JSON.stringify(id)});el[el.type==='checkbox'?'checked':'value']=${JSON.stringify(value)};el.dispatchEvent(new Event('change'));}`);await wait(400);}
+ for(let i=0;i<50;i++){if(await js(`${doc}.querySelector('[data-preview-skin="battle"]').getAttribute('aria-disabled')==='false'`))break;await wait(100);}
+ await js(`${doc}.querySelector('[data-preview-skin="battle"]').click()`);await wait(400);
+ record('embedded-outfit-card-click-saves',api.getPanel().get().settings.skin==='battle');
+ await js(`${doc}.querySelector('[data-preview-style="style1"]').dispatchEvent(new KeyboardEvent('keydown',{key:' ',bubbles:true}))`);await wait(400);
+ record('embedded-style-card-keyboard-saves',api.getPanel().get().settings.quotaStyle==='style1');
+ record('embedded-dropdowns-hidden',await js(`['skin','quotaStyle'].every(id=>${doc}.getElementById(id).getBoundingClientRect().height===0)`));
+ record('embedded-radio-selection-announced',await js(`${doc}.querySelector('[data-preview-skin="battle"]').getAttribute('aria-checked')==='true'`));
+ await js(`${doc}.querySelector('[data-preview-style="style1"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`);await wait(400);
+ record('embedded-arrow-key-selects-next-card',api.getPanel().get().settings.quotaStyle==='style2');
  for(const [id,value,expected] of [['quotaBadgeVisible',false,false],['quotaStyle','style1','style1'],['bubbleScale','140',1.4],['skin','battle','battle'],['size','80',.8],['reduced',true,true],['followCodex',true,true],['bubbleEnabled',false,false],['bubbleTone','simple','simple'],['bubbleCustomLine','陪你一起完成♡','陪你一起完成♡'],['dockEnabled',true,true],['dock','top','top']]){
   await change(id,value);record('live-setting-'+id,api.getPanel().get().settings[id]===expected);
  }
@@ -57,7 +66,7 @@ app.whenReady().then(async()=>{
  await js(`${doc}.getElementById('bubblePhraseState').closest('details').open=true;${doc}.getElementById('bubblePhraseState').value='working';${doc}.getElementById('bubblePhraseState').dispatchEvent(new Event('change'));`);
  record('phrase-list-shares-runtime-and-custom-line',await js(`${doc}.getElementById('bubblePhraseList').textContent.includes('陪你一起完成♡')`));
  await change('bubbleTone','cute');record('phrase-list-keeps-selected-state-and-expansion',await js(`${doc}.getElementById('bubblePhraseState').closest('details').open&&${doc}.getElementById('bubblePhraseState').value==='working'&&${doc}.getElementById('bubbleTone').options.length===2`));
- await js('rejectNext=true');await change('skin','redwhite');record('failed-save-rolls-back-and-reenables',await js(`${doc}.getElementById('skin').value==='battle'&&!${doc}.getElementById('skin').disabled&&${doc}.getElementById('message').classList.contains('error')`));
+ await js(`rejectNext=true;${doc}.querySelector('[data-preview-skin="redwhite"]').click()`);await wait(400);record('failed-save-rolls-back-and-reenables',await js(`${doc}.getElementById('skin').value==='battle'&&!${doc}.getElementById('skin').disabled&&${doc}.querySelector('[data-preview-skin="battle"]').getAttribute('aria-checked')==='true'&&${doc}.querySelector('[data-preview-skin="redwhite"]').getAttribute('aria-disabled')==='false'&&${doc}.getElementById('message').classList.contains('error')`));
  const response=await server.handle({jsonrpc:'2.0',id:8,method:'tools/call',params:{name:'pet_settings_update',arguments:{set:{size:1,visible:'bad'}}}});
  record('invalid-mixed-patch-is-atomic',response.result.isError===true&&api.getPanel().get().settings.size===.8);
  const compat=await server.handle({jsonrpc:'2.0',id:9,method:'tools/call',params:{name:'pet_open_settings',arguments:{}}});
