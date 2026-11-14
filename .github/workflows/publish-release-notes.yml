@@ -32,5 +32,8 @@ jobs:
             exit 0
           fi
           gh release view "v$version" --json isDraft,body > "$RUNNER_TEMP/release-notes-before.json"
-          jq -e --arg marker "$marker" '.isDraft == false and (.body | contains($marker))' "$RUNNER_TEMP/release-notes-before.json" > /dev/null
+          if ! jq -e --arg marker "$marker" '.isDraft == false and (.body | contains($marker))' "$RUNNER_TEMP/release-notes-before.json" > /dev/null; then
+            echo "Release revision differs or publication is in progress; the release build will publish matching notes and downloads together."
+            exit 0
+          fi
           gh release edit "v$version" --notes-file docs/RELEASE-NOTES.md
