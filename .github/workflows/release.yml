@@ -77,6 +77,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           git archive --format=zip --output="dist/codex-pet-plugin-v$version.zip" HEAD .agents/plugins/marketplace.json plugins/codex-pet
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python -B scripts/verify_runtime_payload.py --portable "dist/inori-codex-pet-v$version" --program-zip "dist/inori-codex-pet-v$version.zip" --plugin-zip "dist/codex-pet-plugin-v$version.zip"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           $lines = Get-ChildItem dist -Filter *.zip | Sort-Object Name | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower() + '  ' + $_.Name }
           $lines | Set-Content -Encoding ascii "dist/SHA256SUMS-v$version.txt"
       - name: Upload downloads and publish completed release

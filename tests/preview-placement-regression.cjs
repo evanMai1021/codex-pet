@@ -19,6 +19,8 @@ app.whenReady().then(async()=>{
  const before={bounds:w.getBounds(),regions:api.regions()};
  api.panel().apply({quotaBadgeVisible:false});await settle();
  const after={bounds:w.getBounds(),regions:api.regions()};
+ record('hidden-badge-is-not-rendered',await w.webContents.executeJavaScript("document.getElementById('chip').hidden&&getComputedStyle(document.getElementById('chip')).display==='none'"));
+ record('hidden-badge-has-no-hit-region',!after.regions.some(r=>r.kind==='chip'));
  const bottom=(v)=>v.bounds.y+Math.max(...v.regions.map(r=>r.y+r.height));
  record('hide-badge-reanchors-free-pet-to-bottom',Math.abs(bottom(before)-(area.y+area.height))<4&&Math.abs(bottom(after)-(area.y+area.height))<4,{before,after,area});
  api.panel().apply({quotaBadgeVisible:true});await settle();

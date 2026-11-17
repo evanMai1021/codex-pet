@@ -72,3 +72,5 @@
 
 /* Keep the calibrated native video inside the same viewport as the canvas. */
 #avatar{overflow:hidden}
+
+#chip[hidden]{display:none!important}

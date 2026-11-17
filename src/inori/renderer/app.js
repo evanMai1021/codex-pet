@@ -13,25 +13,28 @@ const anim=window.InoriAnimation;let skin=window.InoriAssets,skinImages={},skinR
 const candidates=Object.fromEntries(['left','right','top','bottom','sleep','stretch'].map(k=>[k,true]));
 const skinCatalog={redwhite:{manifest:window.InoriAssets,base:'../assets/redwhite/'},battle:{manifest:window.InoriBattleAssets,base:'../assets/battle/'}};
 const skinCache=new Map();
+let activeBundle=null;
 function loadSkin(requested){
  const id=Object.hasOwn(skinCatalog,requested)?requested:'redwhite';
  if(activeSkin===id){if(pendingSkin){++loadToken;pendingSkin=null;}return;}
  if(pendingSkin===id)return;
  pendingSkin=id;const token=++loadToken,entry=skinCatalog[id];
  if(!skinCache.has(id)){
-  const manifest=entry.manifest,images={};
-  const files=[...Object.entries(manifest.clips).map(([k,v])=>[k,v.image]),...Object.entries(manifest.additionalImages||{}),...Object.entries(manifest.dock.images||{dock:manifest.dock.image})];
-  const decoded=new Map();
-  skinCache.set(id,Promise.all(files.map(([key,file])=>{
+  const manifest=entry.manifest,images={},decoded=new Map();
+  const files=new Map([...Object.entries(manifest.clips).map(([k,v])=>[k,v.image]),...Object.entries(manifest.additionalImages||{}),...Object.entries(manifest.dock.images||{dock:manifest.dock.image})]);
+  const ensure=key=>{
+   const file=files.get(key);if(!file)return Promise.reject(Error('服装资源不存在：'+key));
    if(!decoded.has(file))decoded.set(file,new Promise((resolve,reject)=>{
-    const im=new Image();im.onload=async()=>{try{await im.decode();resolve(im);}catch{reject(Error('服装资源未解码：'+file));}};im.onerror=()=>reject(Error('服装资源未加载：'+file));im.src=entry.base+file;
+    const im=new Image();im.onload=async()=>{try{await im.decode();for(const [alias,name] of files)if(name===file)images[alias]=im;resolve(im);if(activeSkin===id){lastPaintKey='';paint();layout();}}catch{reject(Error('服装资源未解码：'+file));}};im.onerror=()=>reject(Error('服装资源未加载：'+file));im.src=entry.base+file;
    }));
-   return decoded.get(file).then(im=>{images[key]=im;});
-  })).then(()=>({manifest,images})));
+   return decoded.get(file);
+  };
+  const first=anim.sampleAsset(manifest,data.status.state,0,0,!!data.reduced),frame=manifest.clips[first.clip].frames[first.frame];
+  skinCache.set(id,ensure(frame.image||first.clip).then(()=>({manifest,images,ensure})));
  }
  skinCache.get(id).then(bundle=>{
   if(token!==loadToken)return;
-  skin=bundle.manifest;skinImages=bundle.images;activeSkin=id;pendingSkin=null;skinReady=true;skinError=null;frameStart=Date.now();overlayUntil=0;avatar.title='';paint();layout();
+  skin=bundle.manifest;skinImages=bundle.images;activeBundle=bundle;activeSkin=id;pendingSkin=null;skinReady=true;skinError=null;frameStart=Date.now();overlayUntil=0;avatar.title='';paint();layout();
  }).catch(error=>{if(token!==loadToken)return;pendingSkin=null;skinCache.delete(id);skinError=error.message;avatar.title=skinError;});
 }
 let data={status:{state:'unknown',threads:[]},quota:{health:'connecting',windows:[]},lastInteraction:Date.now(),dock:null},idleSince=Date.now(),lastState='unknown',overlayUntil=0,frameStart=Date.now(),petHover=false,press=null,clickTimer,lastRelease=0;
@@ -43,7 +46,7 @@ function renderQuota(){
  $('compact').textContent=windows.length?windows.map(w=>`${w.label} ${Math.round(w.remaining)}%`).join(' · '):({unverified:'额度 · 核对账户',connecting:'额度连接中',unavailable:'额度未连接','account-mismatch':'账户已变化'}[q.health]??'额度未知');
 }
 function apply(value){
- data=value;loadSkin(value.skin??'redwhite');const state=value.status.state;const nextKey=state+':'+(value.status.turnId??'');if(nextKey!==stateKey){stateKey=nextKey;frameStart=Date.now();}
+ data=value;chip.hidden=value.quotaBadgeVisible===false;loadSkin(value.skin??'redwhite');const state=value.status.state;const nextKey=state+':'+(value.status.turnId??'');if(nextKey!==stateKey){stateKey=nextKey;frameStart=Date.now();}
  if(state!=='idle'||lastState!=='idle')idleSince=Date.now();
  lastState=state;scene.dataset.state=state;scene.dataset.dock=value.dock??'free';scene.classList.toggle('reduced',!!value.reduced);
  renderQuota();layout();paint();
@@ -72,7 +75,7 @@ function reportRegions(){if(!skinReady)return;positionBadge();const scale=innerW
   bubbleBounds:{x:r.left/scale+currentEnvelope.x*unit,y:r.top/scale+currentEnvelope.y*unit,width:currentEnvelope.width*unit,height:currentEnvelope.height*unit},
   detailsBounds:{x:(ax+x)*unit,y:(ay+y)*unit,width:(right-x)*unit,height:(bottom-y)*unit}};
  // Report the complete badge, even if outside the viewport; clipping must not hide it from placement.
- const regions=[body,...[...(data.dock&&scene.classList.contains('peek')?[avatar]:[]),chip].map(el=>{const r=el.getBoundingClientRect();return{kind:el===chip?'chip':'hit',x:r.left/scale,y:r.top/scale,width:r.width/scale,height:r.height/scale};})];const signature=JSON.stringify(regions);if(signature!==lastRegionKey){lastRegionKey=signature;window.inori.regions(regions);}
+ const regions=[body,...[...(data.dock&&scene.classList.contains('peek')?[avatar]:[]),...(chip.hidden?[]:[chip])].map(el=>{const r=el.getBoundingClientRect();return{kind:el===chip?'chip':'hit',x:r.left/scale,y:r.top/scale,width:r.width/scale,height:r.height/scale};})];const signature=JSON.stringify(regions);if(signature!==lastRegionKey){lastRegionKey=signature;window.inori.regions(regions);}
 }
 function measureInk(){const a=ctx.getImageData(0,0,192,208).data;let x0=192,y0=208,x1=0,y1=0;for(let y=0;y<208;y++)for(let x=0;x<192;x++)if(a[(y*192+x)*4+3]>32){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+1);y1=Math.max(y1,y+1);}if(x1>x0)ink={x:x0,y:y0,width:x1-x0,height:y1-y0};}
 function interaction(){if(Date.now()<overlayUntil)return;window.inori.interact();idleSince=Date.now();activeClick=Math.random()<.5?'wave':'peace';clickStartedAt=Date.now();const videoDuration=skin.videos?.[activeClick]?.durationMs;overlayUntil=clickStartedAt+(Number.isFinite(videoDuration)?videoDuration:anim.duration(activeClick));}
@@ -106,6 +109,8 @@ function paint(){if(!skinReady)return;
  if(videoFrame){videoFrame.video.style.transformOrigin='0 0';videoFrame.video.style.transform=`matrix(${videoPlacement.matrix.join(',')})`;}
  $('sprite').style.opacity=videoFrame?'0':'';
  const dockFrame=pose?anim.dockLayout(skin.dock,pose,elapsed,!!data.reduced):null;
+ const imageKey=pose?dockFrame.imageKey:frame.image||sample.clip;
+ if(!videoFrame&&!skinImages[imageKey]){activeBundle.ensure(imageKey).catch(error=>{skinError=error.message;avatar.title=skinError;});$('sprite').style.opacity='';return;}
  const key=videoFrame?videoFrame.key+':'+pose:JSON.stringify([activeSkin,pose,pose?dockFrame:[frame.source,frame.box,frame.draw,frame.image||sample.clip],sample.lift||0,sample.electric||0,!!sample.question]);
  if(key===lastPaintKey){reportRegions();return;}lastPaintKey=key;paintCount++;ctx.clearRect(0,0,192,208);
  if(videoFrame){const v=videoFrame.video,scale=Math.min(192/v.videoWidth,208/v.videoHeight),w=v.videoWidth*scale,h=v.videoHeight*scale;ctx.save();ctx.setTransform(...videoPlacement.matrix);ctx.drawImage(v,(192-w)/2,208-h,w,h);ctx.restore();}
