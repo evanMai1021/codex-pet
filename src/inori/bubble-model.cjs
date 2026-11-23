@@ -26,18 +26,30 @@ function taskBubble(snapshot){
  if(!['working','waiting','error','completed','interrupted','unknown'].includes(state))return {visible:false};
  if(state==='unknown'&&!status.threadId)return {visible:false};
  const approval=state==='waiting'&&status.approvalPending===true;
+ const unique=new Map();
+ threads.forEach((row,index)=>{if(!row.terminalAt)unique.set(row.threadId??index,row);});
+ const current=[...unique.values()];
+ const count=current.filter(row=>['working','waiting'].includes(row.state)).length;
+ const uncertainCount=current.filter(row=>row.state==='unknown').length;
  const labels={working:'任务进行中',waiting:approval?'需要你批准':'需要你操作',error:'任务出错',completed:'本轮已完成',interrupted:'本轮已中断',unknown:'状态暂不可确认'};
  return {visible:true,state,title:clean(status.title||'未命名任务',80),label:labels[state],
-  stage:state==='working'?clean(status.phase||'正在处理任务',40):'',
+  stage:state==='working'?clean((status.statusSource==='local-lifecycle'?'本地状态 · ':'')+(status.phase||'正在处理任务'),40):'',
   progress:state==='working'?clean(status.publicProgress||status.phase||'正在处理任务',120):state==='waiting'?'':clean(status.label||labels[state]),
   action:state==='waiting'?(approval?'请到 Codex 查看并决定是否批准':'请到 Codex 查看需要回答或处理的提示'):'',
-  count:threads.length,approval,experimental:approval&&status.statusSource==='desktop-ipc-experimental'};
+  count,uncertainCount,approval,experimental:approval&&status.statusSource==='desktop-ipc-experimental'};
 }
-function placeBubble(anchor,area,width=276,height=136,obstacles=[]){
+function placeBubble(anchor,area,width=276,height=136,obstacles=[],options={}){
  const gap=10;
  width=Math.min(width,area.width);height=Math.min(height,area.height);
  const cx=anchor.x+(anchor.width-width)/2,cy=anchor.y+(anchor.height-height)/2;
- const candidates=[[anchor.x+anchor.width+gap,cy],[anchor.x-width-gap,cy],[cx,anchor.y-height-gap],[cx,anchor.y+anchor.height+gap]];
+ const sides={right:[anchor.x+anchor.width+gap,cy],left:[anchor.x-width-gap,cy],top:[cx,anchor.y-height-gap],bottom:[cx,anchor.y+anchor.height+gap]};
+ const order=['right','left','top','bottom'];
+ if(order.includes(options.bubblePosition))order.unshift(...order.splice(order.indexOf(options.bubblePosition),1));
+ const offset=value=>Number.isFinite(value)?Math.max(-400,Math.min(400,Math.round(value))):0;
+ const dx=offset(options.bubbleOffsetX),dy=offset(options.bubbleOffsetY);
+ const originals=order.map(side=>sides[side]);
+ const candidates=originals.flatMap(([x,y])=>dx||dy?[[x+dx,y+dy],[x,y]]:[[x,y]]);
+ // Unsafe offsets fall back to an unobstructed position on this display.
  // Try aligned alternatives around the other floating panel before giving up.
  if(obstacles.length){
   const xs=[anchor.x+anchor.width+gap,anchor.x-width-gap,cx,area.x,area.x+area.width-width];

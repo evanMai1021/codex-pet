@@ -19,7 +19,7 @@ ipcMain.handle('test:embedded',(event,m)=>{if(event.sender!==window.webContents)
 app.whenReady().then(async()=>{
  for(let i=0;i<100&&!fs.existsSync(path.join(process.env.INORI_DATA_DIR,'settings-control.json'));i++)await wait(100);
  const html=fs.readFileSync(path.resolve(__dirname,'../plugins/codex-pet/ui/control.html'),'utf8');
- const wrapper=`<!doctype html><style>body{margin:0;background:#161719}iframe{border:0;width:100vw;height:100vh}</style><iframe id="panel"></iframe><script>
+ const wrapper=`<!doctype html><style>body{margin:0;background:#161719;overflow:hidden}iframe{display:block;border:0;width:100%;height:100vh}</style><iframe id="panel"></iframe><script>
  window.calls=[];window.rejectNext=false;
  addEventListener('message',async e=>{const m=e.data;if(e.source!==document.getElementById('panel').contentWindow||m.id===undefined)return;let response;
  if(m.method==='ui/initialize')response={jsonrpc:'2.0',id:m.id,result:{protocolVersion:'2026-01-26',hostCapabilities:{}}};
@@ -30,7 +30,7 @@ app.whenReady().then(async()=>{
  await window.loadFile(wrapperFile);const js=s=>window.webContents.executeJavaScript(s),doc="document.getElementById('panel').contentWindow.document";
  const checks=[],record=(name,pass)=>checks.push({name,pass});
  for(let i=0;i<100;i++){if(await js(`!${doc}.getElementById('skin').disabled`))break;await wait(100);}
- record('all-thirteen-settings-enabled-without-native-settings-window',await js(`${doc}.querySelectorAll('.row input,.row select').length===13&&!${doc}.getElementById('skin').disabled`)&&BrowserWindow.getAllWindows().length===2);
+ record('all-seventeen-settings-enabled-without-native-settings-window',await js(`${doc}.querySelectorAll('.row input,.row select').length===17&&!${doc}.getElementById('skin').disabled`)&&BrowserWindow.getAllWindows().length===2);
  await wait(400);
  for(let i=0;i<60;i++){if(await js(`[...${doc}.querySelectorAll('.skin-previews img')].every(img=>img.complete&&img.naturalWidth>0)`))break;await wait(50);}
  record('both-real-outfit-previews-loaded',await js(`${doc}.querySelectorAll('.skin-previews img').length===2&&[...${doc}.querySelectorAll('.skin-previews img')].every(img=>img.naturalWidth>0)`));
@@ -55,9 +55,12 @@ app.whenReady().then(async()=>{
  record('embedded-radio-selection-announced',await js(`${doc}.querySelector('[data-preview-skin="battle"]').getAttribute('aria-checked')==='true'`));
  await js(`${doc}.querySelector('[data-preview-style="style1"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`);await wait(400);
  record('embedded-arrow-key-selects-next-card',api.getPanel().get().settings.quotaStyle==='style2');
- for(const [id,value,expected] of [['quotaBadgeVisible',false,false],['quotaStyle','style1','style1'],['bubbleScale','140',1.4],['skin','battle','battle'],['size','80',.8],['reduced',true,true],['followCodex',true,true],['bubbleEnabled',false,false],['bubbleTone','simple','simple'],['bubbleCustomLine','陪你一起完成♡','陪你一起完成♡'],['dockEnabled',true,true],['dock','top','top']]){
+ for(const [id,value,expected] of [['bubblePinnedPage','quota','quota'],['bubblePosition','left','left'],['bubbleOffsetX','35',35],['bubbleOffsetY','-45',-45],['quotaBadgeVisible',false,false],['quotaStyle','style1','style1'],['bubbleScale','140',1.4],['skin','battle','battle'],['size','80',.8],['reduced',true,true],['followCodex',true,true],['bubbleEnabled',false,false],['bubbleTone','simple','simple'],['bubbleCustomLine','陪你一起完成♡','陪你一起完成♡'],['dockEnabled',true,true],['dock','top','top']]){
   await change(id,value);record('live-setting-'+id,api.getPanel().get().settings[id]===expected);
  }
+ await js(`${doc}.getElementById('resetBubblePosition').click()`);await wait(400);
+ record('bubble-position-reset',api.getPanel().get().settings.bubblePosition==='auto'&&api.getPanel().get().settings.bubbleOffsetX===0&&api.getPanel().get().settings.bubbleOffsetY===0);
+ await change('bubblePosition','bottom');await change('bubbleOffsetX','25');await change('bubbleOffsetY','30');
  record('outfit-preview-matches-selected-skin',await js(`${doc}.querySelector('[data-preview-skin="battle"]').classList.contains('selected')&&!${doc}.querySelector('[data-preview-skin="redwhite"]').classList.contains('selected')`));
  record('quota-preview-matches-selected-style',await js(`${doc}.querySelector('[data-preview-style="style1"]').classList.contains('selected')&&!${doc}.querySelector('[data-preview-style="style2"]').classList.contains('selected')`));
  record('native-size-applied',api.getWindow().getBounds().width===Math.round(300*.8));
@@ -72,10 +75,29 @@ app.whenReady().then(async()=>{
  const compat=await server.handle({jsonrpc:'2.0',id:9,method:'tools/call',params:{name:'pet_open_settings',arguments:{}}});
  record('legacy-tool-now-returns-embedded-settings',!!compat.result.structuredContent?.schema&&BrowserWindow.getAllWindows().length===2);
  const saved=JSON.parse(fs.readFileSync(path.join(process.env.INORI_DATA_DIR,'settings.json'),'utf8'));
- record('settings-persisted',saved.bubbleScale===1.4&&saved.skin==='battle'&&saved.size===.8&&saved.bubbleCustomLine==='陪你一起完成♡'&&saved.dockEnabled===false&&saved.quotaStyle==='style1'&&saved.quotaBadgeVisible===false);
+ record('settings-persisted',saved.bubblePinnedPage==='quota'&&saved.bubblePosition==='bottom'&&saved.bubbleOffsetX===25&&saved.bubbleOffsetY===30&&saved.bubbleScale===1.4&&saved.skin==='battle'&&saved.size===.8&&saved.bubbleCustomLine==='陪你一起完成♡'&&saved.dockEnabled===false&&saved.quotaStyle==='style1'&&saved.quotaBadgeVisible===false);
  record('follow-codex-persisted-separately',JSON.parse(fs.readFileSync(path.join(process.env.CODEX_PET_HOME,'runtime.json'),'utf8')).followCodex===true);
  await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true});await wait(150);fs.writeFileSync(path.join(out,'embedded-settings.png'),(await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());
  window.setSize(430,1000);await wait(100);record('narrow-layout-no-horizontal-overflow',await js(`${doc}.documentElement.scrollWidth<=${doc}.documentElement.clientWidth`));
+ // Button wiring/offline view are checked here; real process-tree termination is
+ // exercised separately by quit-runtime-regression.cjs and its parent runner.
+ const quitControl=require('../plugins/codex-pet/server/control-client.cjs'),quitIntegration=require('../plugins/codex-pet/server/integration.cjs');
+ const realQuit=quitControl.quit;let quitCalls=0;
+ quitControl.quit=async()=>{quitCalls++;quitIntegration.setPetStopped(true);return {stopped:true};};
+ await js(`${doc}.getElementById('quitPet').click()`);await wait(350);
+ record('quit-button-invokes-exit-tool',quitCalls===1);
+ record('quit-view-shows-stopped',await js(`${doc}.getElementById('status').textContent.includes('已退出')`));
+ record('quit-view-disables-setting-and-quit',await js(`${doc}.getElementById('size').disabled&&${doc}.getElementById('quitPet').disabled&&!${doc}.getElementById('openPet').disabled`));
+ record('stopped-preferences-preserved',await js(`${doc}.querySelector('[data-preview-skin="battle"]').getAttribute('aria-checked')==='true'`));
+ const paused=await server.handle({jsonrpc:'2.0',id:90,method:'tools/call',params:{name:'pet_settings_read',arguments:{}}});
+ record('passive-read-remains-stopped',paused.result.structuredContent.runtimeStopped===true);
+ await js(`window.scrollTo(0,0);${doc}.defaultView.scrollTo(0,0)`);await wait(150);
+ record('narrow-exit-view-no-horizontal-overflow',await js(`${doc}.documentElement.scrollWidth<=${doc}.documentElement.clientWidth`));
+ fs.writeFileSync(path.join(out,'stopped-settings.png'),(await window.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true})).toPNG());
+ await js(`${doc}.getElementById('openPet').click()`);await wait(350);
+ record('explicit-open-resumes-runtime',api.getWindow().isVisible()&&quitIntegration.readConfig().petStopped===false);
+ record('explicit-open-enables-exit',await js(`!${doc}.getElementById('quitPet').disabled`));
+ quitControl.quit=realQuit;
  fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({passed:checks.every(c=>c.pass),mode:'actual-iframe-MCP-loopback-native-settings; simulated-Codex-host',checks},null,2));app.exit(checks.every(c=>c.pass)?0:1);
 }).catch(e=>{fs.writeFileSync(path.join(out,'error.txt'),String(e.stack));app.exit(2);});
 setTimeout(()=>app.exit(3),35000);

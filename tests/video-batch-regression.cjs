@@ -44,7 +44,7 @@ app.whenReady().then(async()=>{
  fs.writeFileSync(path.join(out,'doze.png'),(await pet.webContents.capturePage()).toPNG());
  await js('idleSince=Date.now()-301000;data.lastInteraction=idleSince;paint();true');record('sleep-entry-uses-video',await ready('sleep-enter'));
  await status('working');await ready('working');
- api.getPanel().apply({reduced:true});await wait(100);record('reduced-motion-stops-videos',await js("!videoAnimation.video&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));api.getPanel().apply({reduced:false});await ready('working');
+ api.getPanel().apply({reduced:true});await wait(100);record('reduced-motion-pauses-videos',await js("!!videoAnimation.video&&videoAnimation.video.paused&&getComputedStyle(document.getElementById('sprite')).opacity==='0'"));api.getPanel().apply({reduced:false});await ready('working');
  await status('idle');
  for(const dock of ['left','right','top','bottom']){api.getPanel().apply({dock});const key='dock-'+(dock==='top'?'bottom':dock);record('dock-remains-correct-'+dock,await ready(key)&&await js(`scene.dataset.animation==='dock-${dock}'`));}
  api.getPanel().apply({dock:null});await status('completed','dock-completion');await ready('completed');api.getPanel().apply({dock:'right'});await js('frameStart=Date.now()-2500;paint();true');

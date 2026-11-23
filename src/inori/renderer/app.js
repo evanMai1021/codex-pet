@@ -3,6 +3,8 @@ const $=id=>document.getElementById(id),scene=$('scene'),avatar=$('avatar'),chip
 const ctx=$('sprite').getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
 let lastPaintKey='',lastRegionKey='',paintCount=0,readbackCount=0,lastQuotaKey='';
+let emptyFrameCount=0,lastOpaquePixels=0,rendererErrorCount=0;
+window.addEventListener('error',()=>rendererErrorCount++);
 // Bounds are identical whenever the same source frame is drawn again.
 const inkCache=new Map();
 const bubbleEnvelopeCache=new Map();
@@ -77,7 +79,7 @@ function reportRegions(){if(!skinReady)return;positionBadge();const scale=innerW
  // Report the complete badge, even if outside the viewport; clipping must not hide it from placement.
  const regions=[body,...[...(data.dock&&scene.classList.contains('peek')?[avatar]:[]),...(chip.hidden?[]:[chip])].map(el=>{const r=el.getBoundingClientRect();return{kind:el===chip?'chip':'hit',x:r.left/scale,y:r.top/scale,width:r.width/scale,height:r.height/scale};})];const signature=JSON.stringify(regions);if(signature!==lastRegionKey){lastRegionKey=signature;window.inori.regions(regions);}
 }
-function measureInk(){const a=ctx.getImageData(0,0,192,208).data;let x0=192,y0=208,x1=0,y1=0;for(let y=0;y<208;y++)for(let x=0;x<192;x++)if(a[(y*192+x)*4+3]>32){x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+1);y1=Math.max(y1,y+1);}if(x1>x0)ink={x:x0,y:y0,width:x1-x0,height:y1-y0};}
+function measureInk(){const a=ctx.getImageData(0,0,192,208).data;let x0=192,y0=208,x1=0,y1=0,opaque=0;for(let y=0;y<208;y++)for(let x=0;x<192;x++)if(a[(y*192+x)*4+3]>32){opaque++;x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+1);y1=Math.max(y1,y+1);}lastOpaquePixels=opaque;if(opaque===0)emptyFrameCount++;if(x1>x0)ink={x:x0,y:y0,width:x1-x0,height:y1-y0};}
 function interaction(){if(Date.now()<overlayUntil)return;window.inori.interact();idleSince=Date.now();activeClick=Math.random()<.5?'wave':'peace';clickStartedAt=Date.now();const videoDuration=skin.videos?.[activeClick]?.durationMs;overlayUntil=clickStartedAt+(Number.isFinite(videoDuration)?videoDuration:anim.duration(activeClick));}
 avatar.addEventListener('pointerdown',e=>{if(e.button!==0)return;press={x:e.screenX,y:e.screenY,dragged:false};avatar.setPointerCapture(e.pointerId);window.inori.press();});
 avatar.addEventListener('pointermove',e=>{if(!press)return;if(Math.hypot(e.screenX-press.x,e.screenY-press.y)>6)press.dragged=true;if(press.dragged){clearTimeout(clickTimer);layout();scene.classList.add('dragging');window.inori.drag();}});
@@ -102,7 +104,7 @@ function paint(){if(!skinReady)return;
  const phase=state==='idle'&&sample.phase&&sample.phase!=='awake'?sample.phase:null;
  const videoKey=pose?'dock-'+(pose==='top'?'bottom':pose):reacting?activeClick:sample.videoPhase||phase||state;
  const videoEpoch=reacting?clickStartedAt:phase?idleSince:frameStart;
- const videoFrame=videoAnimation.frame(activeSkin,skin,videoKey,skinCatalog[activeSkin].base,!data.reduced,videoEpoch);
+ const videoFrame=videoAnimation.frame(activeSkin,skin,videoKey,skinCatalog[activeSkin].base,true,videoEpoch,!!data.reduced);
  // Display the decoded video directly so high-DPI/large pets do not upscale a 192px bitmap.
  if(videoFrame&&videoFrame.video.parentElement!==avatar){videoFrame.video.className='continuous-video';avatar.appendChild(videoFrame.video);}
  const videoPlacement=videoFrame?anim.videoLayout(skin.videos[videoKey],pose):null;
@@ -130,4 +132,4 @@ function draw(){paint();requestAnimationFrame(draw);}
 requestAnimationFrame(draw);
 window.inoriSmokeState=()=>({canvasReady:skinReady,skinError,skin:activeSkin,pendingSkin,animation:scene.dataset.animation,idlePhase:scene.dataset.idlePhase,completionRate:anim.COMPLETION_RATE,skinKeys:Object.keys(skinImages),state:scene.dataset.state,dock:scene.dataset.dock,classes:scene.className,avatarLeft:getComputedStyle(avatar).left,avatarTop:getComputedStyle(avatar).top,candidateKeys:Object.keys(candidates),panelVisible:false,quota:$('compact').textContent,panelWithinWindow:true});
 
-window.inoriRenderStats=()=>({paintCount,readbackCount});
+window.inoriRenderStats=()=>({paintCount,readbackCount,emptyFrameCount,lastOpaquePixels,rendererErrorCount,documentVisibility:document.visibilityState,videoReady:videoAnimation.video?.readyState??null,videoPaused:videoAnimation.video?.paused??null});

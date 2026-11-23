@@ -114,6 +114,24 @@ def desktop_root_pids():
     return list(_desktop_probe.pids) if _desktop_probe else []
 
 
+def desktop_session():
+    """Main PID + creation time; no window titles, account data or chat content."""
+    state=desktop_running()
+    if state is None:return None
+    if state is False:return []
+    probe=_desktop_probe
+    kernel=probe.kernel
+    kernel.GetProcessTimes.argtypes=[wintypes.HANDLE,*([ctypes.POINTER(wintypes.FILETIME)]*4)]
+    kernel.GetProcessTimes.restype=wintypes.BOOL
+    identities=[]
+    for pid,handle in zip(probe.pids,probe.handles):
+        created,exited,kernel_time,user_time=(wintypes.FILETIME() for _ in range(4))
+        if not kernel.GetProcessTimes(handle,ctypes.byref(created),ctypes.byref(exited),ctypes.byref(kernel_time),ctypes.byref(user_time)):return None
+        stamp=(created.dwHighDateTime<<32)|created.dwLowDateTime
+        identities.append(f'{pid}:{stamp}')
+    return sorted(identities)
+
+
 def desktop_window_present():
     """Existence only: hidden/minimized windows still count; no titles/content."""
     pids=set(desktop_root_pids())
@@ -139,3 +157,12 @@ def desktop_window_present():
             return True
         return found if user.EnumWindows(visit,0) else None
     except (OSError,ValueError,AttributeError):return None
+
+
+if __name__=='__main__':
+    import json,sys
+    if sys.argv[1:]==['--session']:
+        try:print(json.dumps(desktop_session()))
+        except (OSError,ValueError,AttributeError):print('null')
+        finally:
+            if _desktop_probe:_desktop_probe.close()

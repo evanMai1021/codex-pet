@@ -25,12 +25,18 @@ const smoke=process.argv.includes('--smoke');
 const liveCheck=process.argv.includes('--live-check');
 let contentReady=false,desiredVisible=!smoke&&!liveCheck&&!process.argv.includes('--control-only'),visibilityIntent=desiredVisible?'startup':'background',visibilityReason='startup';const visibilityEvents=[];
 let win,bridge,quitting=false,hovered=false,urgentTimer,saveTimer,drag=null,regions=[],settlePlacement=false;
+let renderHealthTimer,renderHealthPending=false;
 let applyingPetSize=false,sizeRepairTimer,failedSizeRepair='';
 let panelsResumeAt=0,lastPetGeometryAt=0;
 let placementDisplayId=null,lastPositionRequest=null;
 let badgePlacementPending=null;
-let settings={bubbleScale:1,bubbleTone:'cute',bubbleCustomLine:'',bubbleEnabled:true,quotaStyle:null,quotaBadgeVisible:true,skin:'redwhite',dock:null,dockEnabled:true,size:1,reduced:false,accountFingerprint:null,x:null,y:null};
+const badgePlacementMemory=require('./badge-placement-memory.cjs').createBadgePlacementMemory();
+function resetBadgePlacement(){badgePlacementPending=null;badgePlacementMemory.reset();}
+let settings={bubblePinnedPage:'off',bubblePosition:'auto',bubbleOffsetX:0,bubbleOffsetY:0,bubbleScale:1,bubbleTone:'cute',bubbleCustomLine:'',bubbleEnabled:true,quotaStyle:null,quotaBadgeVisible:true,skin:'redwhite',dock:null,dockEnabled:true,size:1,reduced:false,accountFingerprint:null,x:null,y:null};
 try{Object.assign(settings,JSON.parse(fs.readFileSync(path.join(DATA,'settings.json'),'utf8')));}catch{}
+settings.bubblePinnedPage=['off','task','quota','usage'].includes(settings.bubblePinnedPage)?settings.bubblePinnedPage:'off';
+settings.bubblePosition=['auto','left','right','top','bottom'].includes(settings.bubblePosition)?settings.bubblePosition:'auto';
+for(const key of ['bubbleOffsetX','bubbleOffsetY'])settings[key]=Number.isFinite(settings[key])?Math.max(-400,Math.min(400,Math.round(settings[key]))):0;
 settings.skin=normalizeSkin(settings.skin);
 settings.bubbleScale=[.8,1,1.2,1.4].includes(settings.bubbleScale)?settings.bubbleScale:1;
 settings.quotaStyle=['style1','style2'].includes(settings.quotaStyle)?settings.quotaStyle:settings.quotaExpanded===false?'style1':'style2';delete settings.quotaExpanded;settings.quotaBadgeVisible=settings.quotaBadgeVisible!==false;delete settings.completionNotify;
@@ -53,13 +59,13 @@ function writeLifecycle(patch={}){
 function setPetVisible(value,reason='manual'){
  desiredVisible=!!value;visibilityIntent=reason==='autostart'?'startup':'manual';visibilityReason=reason;
  if(!win||win.isDestroyed())return;
- if(!desiredVisible){win.hide();taskBubble.hide();}else if(contentReady)win.showInactive();
+ if(!desiredVisible){if(win.isVisible())win.hide();taskBubble.hide();}else if(contentReady){if(!win.isVisible())win.showInactive();}
  else{const target=win;target.webContents.capturePage(undefined,{stayHidden:true,stayAwake:true}).then(()=>{if(!target.isDestroyed())return target.webContents.executeJavaScript('paint();layout();true');}).catch(()=>{});}
 }
 const bubbleAnchor=require('./bubble-anchor.cjs').createBubbleAnchor();
 
 
-const taskBubble=require('./task-bubble.cjs').createTaskBubble({onRefresh:refreshQuota,onConfirm:confirmAccount});
+const taskBubble=require('./task-bubble.cjs').createTaskBubble({onRefresh:refreshQuota,onConfirm:confirmAccount,onDismiss:()=>{settings.bubblePinnedPage='off';setBubbleEnabled(false);}});
 function petPanelAnchor(){
  if(!win||win.isDestroyed())return null;
  const identity=[settings.skin,settings.dock].join(':');
@@ -166,19 +172,19 @@ function repairPetSize(){
  failedSizeRepair=Math.abs(after.width-width)>8||Math.abs(after.height-height)>8?[settings.size,after.width,after.height].join(':'):'';
  settlePlacement=true;relocate();
 }
-function resizePet(size){
+function resizePet(size){resetBadgePlacement();
   settings.size=size;settlePlacement=true;failedSizeRepair='';
   applyConfiguredPetSize();
   relocate();
 }
-function setSkin(id){settings.skin=normalizeSkin(id);snapshot.skin=settings.skin;settlePlacement=true;save();send();}
+function setSkin(id){resetBadgePlacement();settings.skin=normalizeSkin(id);snapshot.skin=settings.skin;settlePlacement=true;save();send();}
 function setDockEnabled(value){settings.dockEnabled=value;setDock(value?settings.dock:null);}
-function setDock(edge){if(edge&&!settings.dockEnabled)return;settlePlacement=settings.dock!==edge;settings.dock=edge;snapshot.dock=edge;snapshot.peek=false;relocate();}
+function setDock(edge){resetBadgePlacement();if(edge&&!settings.dockEnabled)return;settlePlacement=settings.dock!==edge;settings.dock=edge;snapshot.dock=edge;snapshot.peek=false;relocate();}
 function menu(){return Menu.buildFromTemplate([
   {label:'楪祈桌宠 0.1.15',enabled:false},
   {label:'自动显示任务气泡',type:'checkbox',checked:settings.bubbleEnabled!==false,click:()=>setBubbleEnabled(settings.bubbleEnabled===false)},
   {label:'气泡大小',submenu:[.8,1,1.2,1.4].map((scale,i)=>({label:['小（80%）','标准（100%）','大（120%）','更大（140%）'][i],type:'radio',checked:settings.bubbleScale===scale,click:()=>settingsPanel.apply({bubbleScale:scale})}))},
-  {label:'回到屏幕中间 / 解除停靠',click:()=>{settings.dock=null;snapshot.dock=null;const a=screen.getPrimaryDisplay().workArea;win.setPosition(Math.round(a.x+(a.width-WIDTH*settings.size)/2),Math.round(a.y+(a.height-HEIGHT*settings.size)/2));snapshot.lastInteraction=Date.now();save();send();}},
+  {label:'回到屏幕中间 / 解除停靠',click:()=>{resetBadgePlacement();settings.dock=null;snapshot.dock=null;const a=screen.getPrimaryDisplay().workArea;win.setPosition(Math.round(a.x+(a.width-WIDTH*settings.size)/2),Math.round(a.y+(a.height-HEIGHT*settings.size)/2));snapshot.lastInteraction=Date.now();save();send();}},
   {label:'允许趴边',type:'checkbox',checked:settings.dockEnabled,click:()=>setDockEnabled(!settings.dockEnabled)},
   {label:'趴边',enabled:settings.dockEnabled,submenu:[['left','左边'],['right','右边'],['top','上边'],['bottom','下边']].map(([edge,label])=>({label,type:'radio',checked:settings.dock===edge,click:()=>setDock(edge)}))},
   {label:'公仔大小',submenu:[.8,1,1.2].map((size,i)=>({label:['小','标准','大'][i],type:'radio',checked:settings.size===size,click:()=>{resizePet(size);}}))},
@@ -186,17 +192,22 @@ function menu(){return Menu.buildFromTemplate([
   {label:'刷新额度（只读）',click:refreshQuota},
   {type:'separator'},
   {label:win?.isVisible()?'隐藏公仔':'显示公仔',click:()=>setPetVisible(!win.isVisible(),'context-menu')},
-  {label:'退出楪祈桌宠',click:()=>app.quit()}
+  {label:'退出楪祈桌宠',click:()=>exitPet('context-menu')}
 ]);}
+function exitPet(source){integration.setPetStopped(true);quitReason='user-exit:'+source;app.quit();}
+let bridgeStopPromise;
 function shutdownBridge(){
-  if(bridgeStopping)return;bridgeStopping=true;desktopStatus?.stop();
-  if(bridge&&!bridge.killed){try{bridge.stdin.write('{"command":"quit"}\n');bridge.stdin.end();}catch{}}
+ if(bridgeStopping)return bridgeStopPromise;bridgeStopping=true;desktopStatus?.stop();
+ bridgeStopPromise=require('./process-tree.cjs').stopOwnedProcessTree(bridge);return bridgeStopPromise;
 }
-if(!app.requestSingleInstanceLock())app.quit();
+const automaticRequest=process.argv.includes('--codex-autostart')||process.argv.includes('--control-only');
+if(automaticRequest&&integration.readConfig().petStopped===true)app.quit();
+else if(!app.requestSingleInstanceLock())app.quit();
 else{
+ if(!automaticRequest)integration.setPetStopped(false);
   app.on('second-instance',(_event,argv)=>{if(argv.includes('--settings'))settingsPanel?.open();else if(argv.includes('--codex-autostart')){if(visibilityIntent==='background')setPetVisible(true,'autostart');}else if(!argv.includes('--control-only'))setPetVisible(true,'open-request');});
   app.on('before-quit',event=>{
-    if(quitting)return;event.preventDefault();quitting=true;clearTimeout(saveTimer);clearTimeout(sizeRepairTimer);
+    if(quitting)return;event.preventDefault();quitting=true;clearTimeout(saveTimer);clearTimeout(sizeRepairTimer);clearInterval(renderHealthTimer);
     try{fs.writeFileSync(path.join(DATA,'settings.json'),JSON.stringify({...settings,x:win?.getBounds().x,y:win?.getBounds().y},null,2));}catch{}
     // Disappear immediately; allow the read-only bridge to clean up off screen.
     win?.hide();
@@ -204,10 +215,9 @@ else{
     writeLifecycle({quitReason,hiddenAt:new Date().toISOString()});
     settingsControl?.close();taskBubble.close();
     let finished=false;
-    const finish=()=>{if(finished)return;finished=true;clearTimeout(deadline);writeLifecycle({cleanupFinishedAt:new Date().toISOString()});setTimeout(()=>app.quit(),0);};
-    const deadline=setTimeout(()=>{if(bridge&&!bridge.killed)bridge.kill();finish();},3500);
-    bridge?.once('exit',finish);shutdownBridge();
-    if(!bridge||bridge.exitCode!==null&&bridge.exitCode!==undefined)finish();
+    const finish=()=>{if(finished)return;finished=true;writeLifecycle({cleanupFinishedAt:new Date().toISOString()});setTimeout(()=>app.quit(),0);};
+    shutdownBridge().then(finish,error=>{writeLifecycle({cleanupError:error.message});finish();});
+
   });
   app.whenReady().then(async()=>{
     const a=screen.getPrimaryDisplay().workArea;
@@ -232,7 +242,7 @@ else{
       const nextPanel=next.some(r=>r.kind==='panel'),opening=nextPanel&&!panelVisible;
       if(badgePlacementPending&&next.some(r=>r.kind==='chip')===(settings.quotaBadgeVisible!==false)){
        const previous=badgePlacementPending;badgePlacementPending=null;
-       if(!settings.dock&&!drag&&previous.dock===settings.dock){const b=win.getBounds();const target=badgeVisibilityBounds(b,currentArea(),previous.regions,next,settings.size);movePet(target.x,target.y);lastPositionRequest=null;}
+       if(!drag&&previous.dock===settings.dock){const b=win.getBounds();const target=previous.restore||(!settings.dock?badgeVisibilityBounds(b,currentArea(),previous.regions,next,settings.size):b);movePet(target.x,target.y);lastPositionRequest=null;}
        settlePlacement=true;
       }
       panelVisible=nextPanel;regions=next;
@@ -246,7 +256,7 @@ else{
     ipcMain.on('inori:hover',(_event,value)=>{if(!drag)hovered=!!value;});
     ipcMain.on('inori:interact',()=>{snapshot.lastInteraction=Date.now();send();});
     ipcMain.on('inori:press',()=>{lastPositionRequest=null;const start=screen.getCursorScreenPoint();drag={start,bounds:win.getBounds(),active:false,oldDock:settings.dock,displayId:screen.getDisplayNearestPoint(start).id,crossedDisplay:false};});
-    ipcMain.on('inori:drag',()=>{if(!drag)return;drag.active=true;const p=screen.getCursorScreenPoint(),dx=p.x-drag.start.x,dy=p.y-drag.start.y;if(!drag.crossedDisplay&&screen.getDisplayNearestPoint(p).id!==drag.displayId){drag.crossedDisplay=true;updateTaskBubble();}if(Math.hypot(dx,dy)>48){settings.dock=null;snapshot.dock=null;}movePet(drag.bounds.x+dx,drag.bounds.y+dy);});
+    ipcMain.on('inori:drag',()=>{if(!drag)return;if(!drag.active)resetBadgePlacement();drag.active=true;const p=screen.getCursorScreenPoint(),dx=p.x-drag.start.x,dy=p.y-drag.start.y;if(!drag.crossedDisplay&&screen.getDisplayNearestPoint(p).id!==drag.displayId){drag.crossedDisplay=true;updateTaskBubble();}if(Math.hypot(dx,dy)>48){settings.dock=null;snapshot.dock=null;}movePet(drag.bounds.x+dx,drag.bounds.y+dy);});
     ipcMain.on('inori:release',()=>{let dropArea;if(drag?.active){panelsResumeAt=Date.now()+300;const cursor=screen.getCursorScreenPoint(),area=screen.getDisplayNearestPoint(cursor).workArea;dropArea=area;const b=win.getBounds(),scale=b.width/WIDTH,r=regions[0];
       const pet=r?{x:b.x+r.x*scale,y:b.y+r.y*scale,width:r.width*scale,height:r.height*scale}:b;
       // Keep the current edge while dragging along it, including at corners.
@@ -260,11 +270,12 @@ else{
     ipcMain.on('inori:menu',()=>menu().popup({window:win}));
     ipcMain.on('inori:refresh',refreshQuota);
 
-    for(const event of ['display-removed','display-added','display-metrics-changed'])screen.on(event,()=>relocate());
+    for(const event of ['display-removed','display-added','display-metrics-changed'])screen.on(event,()=>{resetBadgePlacement();relocate();});
     settingsPanel=require('./settings/controller.cjs').createSettingsPanel({
       hidden:process.argv.includes('--settings-self-test'),
-      get:()=>({quotaBadgeVisible:settings.quotaBadgeVisible,quotaStyle:settings.quotaStyle,bubbleScale:settings.bubbleScale,bubbleTone:settings.bubbleTone,bubbleCustomLine:settings.bubbleCustomLine,bubbleEnabled:settings.bubbleEnabled!==false,followCodex:integration.readConfig().followCodex===true,skin:settings.skin,size:settings.size,dock:settings.dock,dockEnabled:settings.dockEnabled,reduced:settings.reduced,visible:win.isVisible(),status:snapshot.status}),
-      apply:patch=>{if('quotaBadgeVisible'in patch&&patch.quotaBadgeVisible!==settings.quotaBadgeVisible)badgePlacementPending={regions:regions.slice(),dock:settings.dock};if('visible'in patch)setPetVisible(patch.visible,'settings');for(const key of ['bubbleScale','bubbleTone','bubbleCustomLine','quotaStyle','quotaBadgeVisible'])if(key in patch)settings[key]=patch[key];updateTaskBubble();if('bubbleEnabled'in patch)setBubbleEnabled(patch.bubbleEnabled);if('followCodex'in patch)integration.setFollowCodex(patch.followCodex);if('skin'in patch)setSkin(patch.skin);if('dockEnabled'in patch)setDockEnabled(patch.dockEnabled);if('size'in patch)resizePet(patch.size);if('dock'in patch)setDock(patch.dock);if('reduced'in patch){settings.reduced=patch.reduced;snapshot.reduced=patch.reduced;}save();send();}
+      quit:()=>exitPet('native-settings'),
+      get:()=>({bubblePinnedPage:settings.bubblePinnedPage,bubblePosition:settings.bubblePosition,bubbleOffsetX:settings.bubbleOffsetX,bubbleOffsetY:settings.bubbleOffsetY,quotaBadgeVisible:settings.quotaBadgeVisible,quotaStyle:settings.quotaStyle,bubbleScale:settings.bubbleScale,bubbleTone:settings.bubbleTone,bubbleCustomLine:settings.bubbleCustomLine,bubbleEnabled:settings.bubbleEnabled!==false,followCodex:integration.readConfig().followCodex===true,skin:settings.skin,size:settings.size,dock:settings.dock,dockEnabled:settings.dockEnabled,reduced:settings.reduced,visible:win.isVisible(),status:snapshot.status}),
+      apply:patch=>{if('quotaBadgeVisible'in patch&&patch.quotaBadgeVisible!==settings.quotaBadgeVisible)badgePlacementPending={regions:regions.slice(),dock:settings.dock,restore:badgePlacementMemory.begin(patch.quotaBadgeVisible,win.getBounds(),JSON.stringify([settings.dock,settings.skin,settings.size,currentArea()]))};if('visible'in patch)setPetVisible(patch.visible,'settings');for(const key of ['bubblePinnedPage','bubblePosition','bubbleOffsetX','bubbleOffsetY','bubbleScale','bubbleTone','bubbleCustomLine','quotaStyle','quotaBadgeVisible'])if(key in patch)settings[key]=patch[key];updateTaskBubble();if('bubbleEnabled'in patch)setBubbleEnabled(patch.bubbleEnabled);if('followCodex'in patch)integration.setFollowCodex(patch.followCodex);if('skin'in patch)setSkin(patch.skin);if('dockEnabled'in patch)setDockEnabled(patch.dockEnabled);if('size'in patch)resizePet(patch.size);if('dock'in patch)setDock(patch.dock);if('reduced'in patch){settings.reduced=patch.reduced;snapshot.reduced=patch.reduced;}save();send();}
     });
     await win.loadFile(path.join(__dirname,'renderer/index.html'));relocate();
     const leaseWatch=require('./desktop-exit.cjs').createPluginLeaseWatch(()=>integration.readConfig().followCodex===true,()=>{
@@ -273,6 +284,7 @@ else{
       setTimeout(()=>{if(!quitting&&!leaseWatch.hasOwners()&&desktopPidWatch.running()===false){quitReason='plugin-connections-closed-and-host-exited';app.quit();}},50);
     });
     settingsControl=await require('./settings/control-server.cjs').startControlServer(settingsPanel,DATA,message=>{
+      if(message?.action==='quit'){integration.setPetStopped(true);setImmediate(()=>exitPet('plugin-settings'));return {closing:true};}
       if(message?.action==='upgrade'){setImmediate(()=>{if(!quitting){quitReason='version-upgrade';app.quit();}});return {closing:true};}
       // Reply before shutdown closes this connection.
       return leaseWatch(message);
@@ -292,6 +304,12 @@ else{
       const now=Date.now();const crossed=snapshot.quota.windows.some(w=>w.resetsAt&&now>=w.resetsAt*1000&&snapshot.quota.updatedAt<w.resetsAt*1000);
       if(crossed&&now-lastResetRefresh>120000){lastResetRefresh=now;refreshQuota();}
     },100);
+    // One bounded snapshot, no growing event log; diagnose real-window vs renderer blanks.
+    renderHealthTimer=setInterval(async()=>{
+      if(quitting||renderHealthPending||!contentReady||win.isDestroyed())return;
+      renderHealthPending=true;
+      try{const stats=await win.webContents.executeJavaScript('window.inoriRenderStats?.()');if(!quitting&&stats)writeLifecycle({renderHealth:{...stats,windowVisible:win.isVisible(),alwaysOnTop:win.isAlwaysOnTop(),bounds:win.getBounds(),sampledAt:new Date().toISOString()}});}catch{}finally{renderHealthPending=false;}
+    },1000);renderHealthTimer.unref();
     if(liveCheck)await runLiveCheck();else if(smoke)await runSmoke();
   }).catch(()=>{process.exitCode=1;app.exit(1);});
 }

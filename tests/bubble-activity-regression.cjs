@@ -1,0 +1,33 @@
+'use strict';
+const {app,screen,ipcMain}=require('electron'),fs=require('node:fs'),path=require('node:path'),Module=require('node:module');
+const out=process.env.INORI_TEST_OUT;if(!out||!process.env.INORI_DATA_DIR||!process.env.CODEX_PET_HOME)throw Error('Isolated paths required');
+fs.mkdirSync(out,{recursive:true});process.argv.push('--no-bridge','--settings-self-test','--control-only');
+const main=process.env.INORI_TEST_MAIN||path.resolve(__dirname,'../src/inori/main.cjs'),under=new Module(main,module);under.filename=main;under.paths=Module._nodeModulePaths(path.dirname(main));
+under._compile(fs.readFileSync(main,'utf8').replace('createTaskBubble({onRefresh:','createTaskBubble({hidden:true,onRefresh:')+'\nmodule.exports={getPanel:()=>settingsPanel,getBubble:()=>taskBubble,getMenu:menu};',main);
+const wait=ms=>new Promise(r=>setTimeout(r,ms)),checks=[],record=(name,pass)=>checks.push({name,pass});
+app.whenReady().then(async()=>{
+ const api=under.exports;for(let i=0;i<100&&!api.getPanel();i++)await wait(80);
+ const panel=api.getPanel(),bubble=api.getBubble(),area=screen.getPrimaryDisplay().workArea;
+ const anchor={x:Math.round(area.x+area.width/2-50),y:Math.round(area.y+area.height/2-60),width:100,height:120};
+ const autoChecked=()=>api.getMenu().items.find(i=>i.label==='自动显示任务气泡').checked;
+ panel.apply({bubbleEnabled:true});
+ const threads=[{threadId:'a',state:'working'},{threadId:'b',state:'waiting'},{threadId:'c',state:'completed'}];
+ const snapshot={status:{state:'working',threadId:'a',turnId:'turn-a',title:'模拟任务',threads}};
+ bubble.update(snapshot,anchor,true,panel.get().settings);await wait(300);
+ const win=bubble.getWindow(),js=s=>win.webContents.executeJavaScript(s);
+ for(let i=0;i<30;i++){bubble.update(snapshot,anchor,true,panel.get().settings);if(await js("document.getElementById('count').textContent==='进行中 2'"))break;await wait(100);}
+ record('two-active-one-ended-rendered-as-two',await js("document.getElementById('count').textContent==='进行中 2'"));
+ threads.push({threadId:'d',state:'unknown'});bubble.update(snapshot,anchor,true,panel.get().settings);await wait(100);
+ record('unknown-is-separate',await js("document.getElementById('count').textContent==='进行中 2 · 待确认 1'"));
+ ipcMain.emit('bubble:dismiss',{sender:{}});record('untrusted-dismiss-ignored',panel.get().settings.bubbleEnabled&&autoChecked());
+ await js("document.getElementById('dismiss').click()");await wait(350);
+ record('close-switches-off-setting',panel.get().settings.bubbleEnabled===false);
+ record('close-unchecks-context-menu',autoChecked()===false);
+ record('close-saves-preference',JSON.parse(fs.readFileSync(path.join(process.env.INORI_DATA_DIR,'settings.json'),'utf8')).bubbleEnabled===false);
+ record('close-hides-bubble',!win.isVisible());
+ bubble.open('quota');bubble.update(snapshot,anchor,true,panel.get().settings);await wait(100);
+ record('manual-open-keeps-auto-disabled',panel.get().settings.bubbleEnabled===false&&autoChecked()===false);
+ record('manual-open-quota-works',await js("document.querySelector('[data-page=quota]').getAttribute('aria-selected')==='true'"));
+ panel.apply({bubbleEnabled:true});record('settings-reenables-menu',autoChecked()===true);
+ const report={passed:checks.every(c=>c.pass),mode:'real isolated renderer close IPC, native menu and preference persistence; simulated chats',checks};fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));bubble.close();app.exit(report.passed?0:1);
+}).catch(e=>{fs.writeFileSync(path.join(out,'error.txt'),String(e.stack));app.exit(2);});setTimeout(()=>app.exit(3),20000);

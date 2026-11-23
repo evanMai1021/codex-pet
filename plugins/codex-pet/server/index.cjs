@@ -24,6 +24,7 @@ const tools=[
  {name:'pet_update_status',title:'查看桌宠更新进度',description:'读取本机安装更新进度，不发起下载。',inputSchema:empty,annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false}},
  {name:'pet_update_install',title:'安装或更新楪祈桌宠',description:'用户要求安装或更新时调用。下载并校验官方项目的程序及插件包，迁移设置并切换；不修改 Codex 安装目录。',inputSchema:empty,annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:true}},
  {name:'pet_open_settings',title:'桌宠设置面板',description:'在 Codex 内显示完整桌宠设置，不打开独立设置窗口。',inputSchema:empty,annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},_meta:{ui:{resourceUri:UI},'openai/outputTemplate':UI}},
+ {name:'pet_quit',title:'退出宠物',description:'退出公仔、设置窗口及桌宠后台；本次会话保持退出，开启跟随时下次Codex启动自动恢复。',inputSchema:empty,annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true,openWorldHint:false}},
  {name:'pet_open',title:'打开宠物',description:'显示桌面楪祈公仔，不打开设置窗口。',inputSchema:empty,annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true,openWorldHint:false}},
  {name:'pet_control_panel',title:'楪祈桌宠设置',description:'在 Codex 中调整服装、大小、趴边、任务气泡及随 Codex 启动。',inputSchema:empty,annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false},_meta:panelMeta},
  {name:'pet_settings_read',title:'读取桌宠设置',description:'读取完整设置；未运行时连接后台桌宠，不弹出设置窗口。',inputSchema:empty,outputSchema:settingsSchema,annotations:{readOnlyHint:false,destructiveHint:false,openWorldHint:false}},
@@ -31,9 +32,9 @@ const tools=[
 ];
 async function readSettings(patch){
  const data=await control.settings(patch);void attach();
- return {schema:{type:'object',properties,additionalProperties:false},values:data.settings,status:data.status,phrases:data.phrases,skins:data.skins,layout:[
-  {kind:'group',title:'桌面公仔',items:[{kind:'tool',tool:'pet_open'},...['visible','quotaBadgeVisible','followCodex','skin','size','reduced','dockEnabled','dock'].map(property=>({kind:'property',property}))]},
-  {kind:'group',title:'任务气泡',items:['bubbleEnabled','quotaStyle','bubbleScale','bubbleTone','bubbleCustomLine'].map(property=>({kind:'property',property}))}
+ return {schema:{type:'object',properties,additionalProperties:false},values:data.settings,runtimeStopped:data.runtimeStopped===true,status:data.status,phrases:data.phrases,skins:data.skins,layout:[
+  {kind:'group',title:'桌面公仔',items:[{kind:'tool',tool:'pet_open'},{kind:'tool',tool:'pet_quit'},...['visible','quotaBadgeVisible','followCodex','skin','size','reduced','dockEnabled','dock'].map(property=>({kind:'property',property}))]},
+  {kind:'group',title:'任务气泡',items:['bubbleEnabled','bubblePinnedPage','bubblePosition','bubbleOffsetX','bubbleOffsetY','quotaStyle','bubbleScale','bubbleTone','bubbleCustomLine'].map(property=>({kind:'property',property}))}
  ]};
 }
 function structured(value){return {content:[{type:'text',text:JSON.stringify(value)}],structuredContent:value};}
@@ -55,6 +56,7 @@ async function handle(m){
   const args=m.params.arguments??{};
   if(!args||typeof args!=='object'||Array.isArray(args)||(name!=='pet_settings_update'&&Object.keys(args).length))return result({isError:true,content:[{type:'text',text:'工具参数无效。'}]});
   try{
+   if(name==='pet_quit')return result(structured(await control.quit()));
    if(name==='pet_update_check')return result(structured(await releases.check(true)));
    if(name==='pet_update_status')return result(structured(releases.status()));
    if(name==='pet_update_install')return result(structured(await releases.install()));

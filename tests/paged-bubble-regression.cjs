@@ -17,6 +17,8 @@ app.whenReady().then(async()=>{
  record('old-details-settings-removed',!('detailsScale' in api.getPanel().get().settings)&&!('detailsVisible' in api.getPanel().get().settings));
  record('old-details-markup-removed',await pet.webContents.executeJavaScript("!document.getElementById('panel')"));
  record('task-first-page-keeps-content',await js("!document.getElementById('page-task').hidden&&document.getElementById('title').textContent.includes('合并翻页')"));
+ record('chat-usage-initially-collapsed',await js("document.getElementById('chat-usage-details').hidden"));
+ await js("document.getElementById('chat-usage-toggle').click()");await wait(100);
  record('current-conversation-cumulative',await js("document.getElementById('chat-total').textContent==='12,345,678'&&document.getElementById('chat-million').textContent.includes('12.35 M')"));
  await js("document.getElementById('thread').value='b';document.getElementById('thread').dispatchEvent(new Event('change'))");await wait(100);
  record('selected-conversation-is-independent',await js("document.getElementById('chat-total').textContent==='87,654,321'&&document.getElementById('title').textContent.includes('合并翻页')"));

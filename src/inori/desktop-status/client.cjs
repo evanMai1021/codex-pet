@@ -10,6 +10,7 @@ class DesktopStatusClient {
   this.onUpdate=onUpdate;this.ttlMs=ttlMs;this.entries=new Map();this.socket=null;this.clientId=null;
   this.timer=null;this.retry=null;this.connectionTimer=null;this.stopping=false;this.started=false;
   this.signature=null;this.failures=0;this.protocolUnsupported=false;this.frameLimit=8*1024*1024;
+  this.errorCode=null;
  }
  start(){
   if(this.started||this.stopping)return;this.started=true;this.connect();
@@ -36,13 +37,13 @@ class DesktopStatusClient {
   this.emit();
  }
  snapshot(){
-  return {connected:!!this.clientId&&!this.stopping,protocolSupported:!this.protocolUnsupported,
+  return {connected:!!this.clientId&&!this.stopping,protocolSupported:!this.protocolUnsupported,errorCode:this.errorCode,
    threads:[...this.entries].map(([threadId,e])=>({threadId,turnId:e.turnId,...e.stream.read()}))};
  }
  emit(){
   if(this.stopping)return;
   const value=this.snapshot();
-  const signature=JSON.stringify({connected:value.connected,protocolSupported:value.protocolSupported,threads:value.threads.map(t=>({threadId:t.threadId,turnId:t.turnId,state:t.state,approvalPending:t.approvalPending,synced:t.synced,reason:t.reason}))});
+  const signature=JSON.stringify({connected:value.connected,protocolSupported:value.protocolSupported,errorCode:value.errorCode,threads:value.threads.map(t=>({threadId:t.threadId,turnId:t.turnId,state:t.state,approvalPending:t.approvalPending,synced:t.synced,reason:t.reason}))});
   if(signature!==this.signature){this.signature=signature;this.onUpdate(value);}
  }
  send(value){
@@ -61,7 +62,7 @@ class DesktopStatusClient {
  handle(message,initializeId){
   if(message?.type==='response'&&message.requestId===initializeId){
    if(message.resultType!=='success'||typeof message.result?.clientId!=='string'){this.socket?.destroy();return;}
-   clearTimeout(this.connectionTimer);this.clientId=message.result.clientId;this.failures=0;
+   clearTimeout(this.connectionTimer);this.clientId=message.result.clientId;this.failures=0;this.errorCode=null;
    for(const [id,e] of this.entries){e.stream.connect();this.follow(id,true);}this.emit();return;
   }
   if(message?.type==='client-discovery-request'){
@@ -104,7 +105,11 @@ class DesktopStatusClient {
     catch{socket.destroy();return;}
    }
   });
-  socket.on('error',()=>{});
+  // Export only bounded error codes; never retain paths, messages or raw payloads.
+  socket.on('error',error=>{
+   if(this.socket!==socket||this.stopping)return;
+   this.errorCode=['ENOENT','EACCES','EPERM','ECONNREFUSED','ECONNRESET','ETIMEDOUT'].includes(error.code)?error.code:'CONNECTION_ERROR';
+  });
   socket.on('close',()=>{
    if(this.socket!==socket)return;
    clearTimeout(this.connectionTimer);this.socket=null;this.clientId=null;buffer=Buffer.alloc(0);

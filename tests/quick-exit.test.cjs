@@ -9,9 +9,9 @@ test('actual quit handler hides windows immediately and exits when bridge finish
  const win={hide(){hidden=true;},isDestroyed:()=>false,getBounds:()=>({x:0,y:0})};
  app.quit=()=>{exited=true;};
  const timers=[];
- const context={require:id=>id==='electron'?{app,BrowserWindow:{getAllWindows:()=>[win]},ipcMain:{on(){}}}:id==='node:fs'?{...fs,mkdirSync(){},readFileSync(){throw Error('isolated');},writeFileSync(){writes++;}}:id==='./details-window.cjs'?{createDetailsWindow:()=>({update(){},close(){}})}:id==='./task-bubble.cjs'?{createTaskBubble:()=>({close(){}})}:native(id),
+ const context={require:id=>id==='./integration.cjs'?{readConfig:()=>({followCodex:false}),setPetStopped(){}}:id==='electron'?{app,BrowserWindow:{getAllWindows:()=>[win]},ipcMain:{on(){}}}:id==='node:fs'?{...fs,mkdirSync(){},readFileSync(){throw Error('isolated');},writeFileSync(){writes++;}}:id==='./details-window.cjs'?{createDetailsWindow:()=>({update(){},close(){}})}:id==='./task-bubble.cjs'?{createTaskBubble:()=>({close(){}})}:native(id),
   process:{env:{INORI_DATA_DIR:path.dirname(file)},argv:[]},__dirname:path.dirname(file),console,Buffer,
-  setTimeout:(fn,ms)=>{const t=setTimeout(fn,ms);timers.push(t);return t;},clearTimeout, module:{exports:{}}};
+  setTimeout:(fn,ms)=>{const t=setTimeout(fn,ms);timers.push(t);return t;},clearTimeout,clearInterval, module:{exports:{}}};
  vm.runInNewContext(fs.readFileSync(file,'utf8')+'\nmodule.exports={setWindow:w=>win=w,setBridge:b=>bridge=b};',context,{filename:file});
  context.module.exports.setWindow(win);context.module.exports.setBridge(bridge);
  try{

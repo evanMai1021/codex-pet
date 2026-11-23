@@ -53,7 +53,7 @@ test('continuous idle preserves original stretch, doze and sleep actions',()=>{
  assert.equal(sample(manifest,'idle',1000,120000).phase,'doze');
  assert.equal(sample(manifest,'idle',1000,300000).phase,'sleep');
 });
-test('video path uses one lazy decoder and stops for reduced motion or missing state',()=>{
+test('video path uses one lazy decoder and stops when disabled or missing state',()=>{
  let created=0,paused=0;const context={document:{createElement:()=>{created++;return {readyState:2,currentTime:0,play:()=>Promise.resolve(),pause:()=>paused++,removeAttribute(){},load(){}};}}};
  vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,'../src/inori/renderer/video-animation.js'),'utf8'),context);
  const player=new context.InoriVideoAnimation(),manifest={videos:{working:{file:'videos/work.webm'}}};

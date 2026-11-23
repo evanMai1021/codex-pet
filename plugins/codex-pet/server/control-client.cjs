@@ -27,5 +27,32 @@ async function connect(){
  })().finally(()=>{connecting=null;});
  return connecting;
 }
-async function settings(patch){const value=await connect();return patch===undefined?value:requestSettings(patch);}
-module.exports={settings,requestSettings,endpointFile,lifecycle:message=>requestSettings(message,'/lifecycle')};
+function stoppedSettings(){
+ const config=integration.readConfig(),{exe}=integration.resolveRuntime(config);let saved={};
+ try{saved=JSON.parse(fs.readFileSync(path.join(process.env.INORI_DATA_DIR||path.join(path.dirname(exe),'resources/run-data'),'settings.json'),'utf8'));}catch{}
+ const defaults={bubblePinnedPage:'off',bubblePosition:'auto',bubbleOffsetX:0,bubbleOffsetY:0,visible:false,skin:'redwhite',size:1,reduced:false,dockEnabled:true,dock:null,bubbleEnabled:true,quotaStyle:'style2',quotaBadgeVisible:true,bubbleScale:1,bubbleTone:'cute',bubbleCustomLine:''};
+ const settings={...defaults};for(const key of Object.keys(require('./schema.cjs').properties))if(key in saved)settings[key]=saved[key];
+ settings.visible=false;settings.followCodex=config.followCodex===true;
+ return {settings,status:{state:'stopped',label:'宠物已退出'},phrases:[],skins:[],runtimeStopped:true};
+}
+async function settings(patch){
+ if(integration.readConfig().petStopped===true){
+  if(patch?.visible===true)integration.setPetStopped(false);
+  else if(patch)throw Error('宠物已退出，请先点击“打开宠物”');
+  else return stoppedSettings();
+ }
+ const value=await connect();return patch===undefined?value:requestSettings(patch);
+}
+async function quit(){
+ integration.setPetStopped(true);
+ let endpoint;try{endpoint=JSON.parse(fs.readFileSync(endpointFile(),'utf8'));}catch{return {stopped:true};}
+ try{await requestSettings({action:'quit'},'/lifecycle');}catch(error){
+  try{process.kill(endpoint.pid,0);throw error;}catch(check){if(check.code!=='ESRCH')throw check;}
+ }
+ for(let i=0;i<60;i++){
+  try{process.kill(endpoint.pid,0);}catch(error){if(error.code==='ESRCH')return {stopped:true};throw error;}
+  await new Promise(resolve=>setTimeout(resolve,50));
+ }
+ throw Error('宠物正在退出，请稍后查看；不会自动重新启动');
+}
+module.exports={settings,requestSettings,endpointFile,quit,lifecycle:message=>requestSettings(message,'/lifecycle')};

@@ -5,7 +5,7 @@ const {SKINS,normalizeSkin}=require('../skins.cjs');
 const {bubblePhraseGroups,normalizeBubbleTone}=require('../bubble-model.cjs');
 function createSettingsPanel(api){
  let panel;
- function get(){const raw=api.get(),skin=SKINS.find(s=>s.id===normalizeSkin(raw.skin));return {settings:{quotaBadgeVisible:raw.quotaBadgeVisible!==false,quotaStyle:raw.quotaStyle==='style1'?'style1':'style2',bubbleScale:raw.bubbleScale??1,bubbleTone:normalizeBubbleTone(raw.bubbleTone),bubbleCustomLine:raw.bubbleCustomLine||'',bubbleEnabled:raw.bubbleEnabled!==false,followCodex:raw.followCodex===true,size:raw.size,dock:raw.dock,dockEnabled:raw.dockEnabled,reduced:raw.reduced,visible:raw.visible,skin:skin.id},status:{state:raw.status.state,label:raw.status.label},phrases:bubblePhraseGroups(raw),skin,skins:SKINS};}
+ function get(){const raw=api.get(),skin=SKINS.find(s=>s.id===normalizeSkin(raw.skin));return {settings:{bubblePinnedPage:raw.bubblePinnedPage??'off',bubblePosition:raw.bubblePosition??'auto',bubbleOffsetX:raw.bubbleOffsetX??0,bubbleOffsetY:raw.bubbleOffsetY??0,quotaBadgeVisible:raw.quotaBadgeVisible!==false,quotaStyle:raw.quotaStyle==='style1'?'style1':'style2',bubbleScale:raw.bubbleScale??1,bubbleTone:normalizeBubbleTone(raw.bubbleTone),bubbleCustomLine:raw.bubbleCustomLine||'',bubbleEnabled:raw.bubbleEnabled!==false,followCodex:raw.followCodex===true,size:raw.size,dock:raw.dock,dockEnabled:raw.dockEnabled,reduced:raw.reduced,visible:raw.visible,skin:skin.id},status:{state:raw.status.state,label:raw.status.label},phrases:bubblePhraseGroups(raw),skin,skins:SKINS};}
  function apply(patch){api.apply(require('./schema.cjs').validatePatch(patch,get().settings));publish();return get();}
  function publish(){if(panel&&!panel.isDestroyed())panel.webContents.send('pet:update',get());}
  async function open(){
@@ -17,6 +17,7 @@ function createSettingsPanel(api){
  function trusted(event){if(!panel||panel.isDestroyed()||event.sender!==panel.webContents)throw Error('仅楪祈设置窗口可调用');}
  ipcMain.handle('pet:get',event=>{trusted(event);return get();});
  ipcMain.handle('pet:set',(event,patch)=>{trusted(event);return apply(patch);});
+ ipcMain.handle('pet:quit',event=>{trusted(event);setImmediate(()=>api.quit());return {closing:true};});
  ipcMain.handle('pet:import',event=>{trusted(event);throw Error('当前仅接入原楪祈桌宠，不导入其他角色');});
  ipcMain.handle('pet:settings',event=>{trusted(event);return open().then(()=>true);});
  return {open,publish,get,apply};

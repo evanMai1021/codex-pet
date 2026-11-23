@@ -27,7 +27,7 @@ app.whenReady().then(async()=>{
    for(let i=0;i<30;i++){await wait(100);ending=await js('({seeking:videoAnimation.video.seeking,time:videoAnimation.video.currentTime,paused:videoAnimation.video.paused})');if(!ending.seeking&&ending.time<1)break;}
    record(skinId+'-'+pose+'-loops',!ending.seeking&&!ending.paused&&ending.time<1,{ending});
   }
-  api.getPanel().apply({dock:null,reduced:true});await wait(100);record(skinId+'-reduced-fallback',await js("!videoAnimation.video&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));api.getPanel().apply({reduced:false});await ready(skinId,'idle');
+  api.getPanel().apply({dock:null,reduced:true});await wait(100);record(skinId+'-reduced-paused-video',await js("!!videoAnimation.video&&videoAnimation.video.paused&&getComputedStyle(document.getElementById('sprite')).opacity==='0'"));api.getPanel().apply({reduced:false});await ready(skinId,'idle');
  }
  api.getPanel().apply({skin:'battle',dock:null});await ready('battle','idle');await js('idleSince=Date.now()-121000;data.lastInteraction=idleSince;paint();true');record('accepted-doze-v2-ready',await ready('battle','doze'));record('accepted-doze-v2-file',await js("videoAnimation.video.currentSrc.endsWith('doze-seedance-mini-v2.webm')&&videoAnimation.video.loop"));await capture('battle-doze');
  await js('idleSince=Date.now();data.lastInteraction=idleSince;paint();true');await ready('battle','idle');for(const size of [.8,1,1.2]){api.getPanel().apply({size});await wait(120);record('configured-size-'+size,await js(`Math.abs(avatar.getBoundingClientRect().width-192*${size})<2`));}api.getPanel().apply({size:1});

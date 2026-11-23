@@ -23,7 +23,7 @@ app.whenReady().then(async()=>{
  const bounds=pet.getBounds();status('idle');record('idle-video-is-retained',await ready('idle-seedance'));status('working');record('switch-back-to-working-video',await ready('working-seedance'));
  record('status-switch-keeps-pet-size',Math.abs(pet.getBounds().width-bounds.width)<=2&&Math.abs(pet.getBounds().height-bounds.height)<=2);
  for(const size of [.8,1,1.2]){api.getPanel().apply({size});await wait(100);record('configured-size-'+size,await js(`Math.abs(avatar.getBoundingClientRect().width-192*${size})<2`));}
- api.getPanel().apply({size:1,reduced:true});await wait(100);record('reduced-motion-restores-atlas',await js("!videoAnimation.video&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));
+ api.getPanel().apply({size:1,reduced:true});await wait(100);record('reduced-motion-pauses-video',await js("!!videoAnimation.video&&videoAnimation.video.paused&&getComputedStyle(document.getElementById('sprite')).opacity==='0'"));
  api.getPanel().apply({reduced:false});record('motion-reenabled-restores-video',await ready('working-seedance'));
  for(const dock of ['left','right','top','bottom']){api.getPanel().apply({dock});await wait(150);record('dock-keeps-own-video-'+dock,await ready('dock-'+(dock==='top'?'bottom':dock)+'-seedance')&&await js(`scene.dataset.animation==='dock-${dock}'`));}
  api.getPanel().apply({dock:null});await ready('working-seedance');const reaction=await js('interaction();paint();activeClick');record('click-reaction-uses-own-video',await ready(reaction+'-seedance'));await js('overlayUntil=0;paint();true');record('after-reaction-working-resumes',await ready('working-seedance'));

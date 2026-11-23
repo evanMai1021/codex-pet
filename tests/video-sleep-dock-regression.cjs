@@ -33,7 +33,7 @@ app.whenReady().then(async()=>{
   const distance=await eyeDistance(key,dock),ratio=distance/ordinaryEyes;record('dock-face-matches-ordinary-'+dock,!!distance&&Math.abs(ratio-1)<.08,{eyeDistance:distance,ratio});
   fs.writeFileSync(path.join(out,'dock-'+dock+'.png'),(await pet.webContents.capturePage()).toPNG());
  }
- api.getPanel().apply({reduced:true});await wait(100);record('reduced-uses-atlas',await js('!videoAnimation.video'));
+ api.getPanel().apply({reduced:true});await wait(100);record('reduced-uses-static-video',await js('!!videoAnimation.video&&videoAnimation.video.paused'));
  api.getPanel().apply({reduced:false,skin:'battle'});await wait(700);record('battle-dock-uses-video',await ready('dock-bottom')&&await js("activeSkin==='battle'&&!!videoAnimation.video"));
  api.getPanel().apply({skin:'redwhite'});await ready('dock-bottom');await js('videoAnimation.video.dispatchEvent(new Event("error"));paint();true');
  record('broken-video-falls-back',await js("!videoAnimation.video&&getComputedStyle(document.getElementById('sprite')).opacity!=='0'"));

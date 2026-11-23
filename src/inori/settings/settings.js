@@ -13,6 +13,7 @@ function show(v){
  if(document.activeElement!==$('bubbleCustomLine'))$('bubbleCustomLine').value=v.settings.bubbleCustomLine||'';
  $('quotaBadgeVisible').checked=v.settings.quotaBadgeVisible!==false;
  $('quotaStyle').value=v.settings.quotaStyle||'style2';
+ for(const key of ['bubblePinnedPage','bubblePosition','bubbleOffsetX','bubbleOffsetY'])if(document.activeElement!==$(key))$(key).value=v.settings[key]??(key==='bubblePinnedPage'?'off':key==='bubblePosition'?'auto':0);
  $('bubbleEnabled').checked=v.settings.bubbleEnabled!==false;
  if(document.activeElement!==$('bubbleScale')){$('bubbleScale').value=Math.round((v.settings.bubbleScale??1)*100);$('bubbleScaleValue').textContent=$('bubbleScale').value+'% · 独立于公仔大小';}
  $('followCodex').checked=v.settings.followCodex===true;
@@ -31,6 +32,10 @@ async function change(patch){previewBusy=true;lockPreviews();try{show(await wind
 for(const id of ['visible','reduced','dockEnabled','followCodex','bubbleEnabled','quotaBadgeVisible'])$(id).onchange=()=>change({[id]:$(id).checked});
 $('bubbleScale').oninput=()=>{$('bubbleScaleValue').textContent=$('bubbleScale').value+'% · 独立于公仔大小';};
 $('bubbleScale').onchange=()=>change({bubbleScale:Number($('bubbleScale').value)/100});
+$('bubblePinnedPage').onchange=()=>change({bubblePinnedPage:$('bubblePinnedPage').value});
+$('bubblePosition').onchange=()=>change({bubblePosition:$('bubblePosition').value});
+for(const key of ['bubbleOffsetX','bubbleOffsetY'])$(key).onchange=()=>change({[key]:$(key).value.trim()===''?NaN:Number($(key).value)});
+$('resetBubblePosition').onclick=()=>change({bubblePosition:'auto',bubbleOffsetX:0,bubbleOffsetY:0});
 $('bubbleTone').onchange=()=>change({bubbleTone:$('bubbleTone').value});
 $('bubblePhraseState').onchange=showPhraseList;
 $('bubbleCustomLine').onchange=()=>change({bubbleCustomLine:$('bubbleCustomLine').value});
@@ -50,3 +55,5 @@ for(const [attr,key] of [['skin','skin'],['style','quotaStyle']]){
   el.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose();}else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const next=cards[(index+(['ArrowLeft','ArrowUp'].includes(e.key)?-1:1)+cards.length)%cards.length];next.focus();next.click();}};
  });
 }
+
+$('quitPet').onclick=async()=>{previewBusy=true;lockPreviews();$('quitPet').disabled=true;try{await window.pet.quit();feedback('正在退出宠物及后台…');}catch(e){previewBusy=false;lockPreviews();$('quitPet').disabled=false;feedback(e.message,true);}};
